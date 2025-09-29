@@ -585,11 +585,18 @@ class TelemedicineDoctor {
 
     setupCanvas() {
         // Configurar canvas para mostrar pose del paciente
-        this.canvas.width = 640;
-        this.canvas.height = 480;
+        this.canvas.width = 600;
+        this.canvas.height = 400;
+
+        // Ajustar canvas al contenedor de análisis
+        this.canvas.style.width = '100%';
+        this.canvas.style.height = '100%';
+        this.canvas.style.objectFit = 'contain';
 
         this.patientVideoContainer.classList.remove('hidden');
         this.noPatientMessage.style.display = 'none';
+
+        console.log('📊 Canvas configurado para análisis de esqueleto:', this.canvas.width, 'x', this.canvas.height);
     }
 
     drawPoseOnCanvas(landmarks) {
@@ -660,12 +667,27 @@ class TelemedicineDoctor {
             this.ctx.stroke();
         });
 
-        // Dibujar información de calidad
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = '16px Arial';
-        this.ctx.fillText(`Landmarks: ${landmarks.length}`, 10, 25);
-        this.ctx.fillText(`FPS: ${this.transmissionStats.fps}`, 10, 50);
-        this.ctx.fillText(`Latencia: ${this.transmissionStats.latency}ms`, 10, 75);
+        // Dibujar información de análisis médico
+        this.ctx.fillStyle = '#00ff00';
+        this.ctx.font = 'bold 14px Arial';
+        this.ctx.fillText(`🦴 Landmarks: ${landmarks.length}`, 10, 25);
+
+        this.ctx.fillStyle = '#ffff00';
+        this.ctx.fillText(`📊 FPS: ${this.transmissionStats.fps}`, 10, 45);
+        this.ctx.fillText(`⏱️ Latencia: ${this.transmissionStats.latency}ms`, 10, 65);
+
+        // Mostrar calidad de análisis
+        const qualityColor = this.transmissionStats.qualityScore === 'Excelente' ? '#00ff00' :
+                           this.transmissionStats.qualityScore === 'Buena' ? '#ffff00' : '#ff6600';
+        this.ctx.fillStyle = qualityColor;
+        this.ctx.fillText(`🎯 Calidad: ${this.transmissionStats.qualityScore}`, 10, 85);
+
+        // Indicador de análisis médico activo
+        if (this.isExamRunning) {
+            this.ctx.fillStyle = '#ff0080';
+            this.ctx.font = 'bold 12px Arial';
+            this.ctx.fillText(`🩺 ANÁLISIS MÉDICO ACTIVO`, 10, 110);
+        }
     }
 
     updateMetricsDisplay() {
@@ -892,7 +914,7 @@ class TelemedicineDoctor {
     clearCanvas() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.patientVideoContainer.classList.add('hidden');
-        this.noPatientMessage.style.display = 'block';
+        this.noPatientMessage.style.display = 'flex';
     }
 
     endSession() {
