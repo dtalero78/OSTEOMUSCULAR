@@ -130,6 +130,17 @@
             pointer-events: none;
         }
 
+        #patientCanvas {
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            max-height: 400px;
+            border: 1px solid #333;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10;
+            position: relative;
+        }
+
         .session-code-display {
             font-size: 36px;
             font-weight: bold;
@@ -260,9 +271,14 @@
         }
 
         .no-patient-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             color: white;
             text-align: center;
             font-size: 18px;
+            z-index: 5;
         }
 
         .stats-panel {

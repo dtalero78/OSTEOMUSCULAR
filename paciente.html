@@ -253,7 +253,7 @@
         <!-- Video del paciente -->
         <div class="video-preview">
             <video id="patientVideo" class="patient-video" autoplay playsinline muted></video>
-            <canvas id="poseCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+            <canvas id="poseCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;"></canvas>
             <div id="countdownOverlay" class="countdown-overlay hidden">5</div>
         </div>
 
