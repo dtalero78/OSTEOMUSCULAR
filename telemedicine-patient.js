@@ -94,6 +94,16 @@ class TelemedicinePatient {
         this.doctorCommands = document.getElementById('doctorCommands');
         this.currentCommand = document.getElementById('currentCommand');
 
+        // Elementos de instrucciones guiadas
+        this.guidedInstructionsOverlay = document.getElementById('guidedInstructionsOverlay');
+        this.guidedInstructionIcon = document.getElementById('guidedInstructionIcon');
+        this.guidedInstructionTitle = document.getElementById('guidedInstructionTitle');
+        this.guidedInstructionText = document.getElementById('guidedInstructionText');
+        this.stepCounter = document.getElementById('stepCounter');
+        this.guidedProgressBar = document.getElementById('guidedProgressBar');
+        this.skipStepBtn = document.getElementById('skipStepBtn');
+        this.guidedAudioToggle = document.getElementById('guidedAudioToggle');
+
         // Controles
         this.testCameraBtn = document.getElementById('testCameraBtn');
         this.toggleAudioBtn = document.getElementById('toggleAudioBtn');
@@ -112,6 +122,10 @@ class TelemedicinePatient {
         this.testCameraBtn.addEventListener('click', () => this.testCamera());
         this.toggleAudioBtn.addEventListener('click', () => this.toggleAudio());
         this.emergencyStopBtn.addEventListener('click', () => this.emergencyStop());
+
+        // Controles de instrucciones guiadas
+        this.skipStepBtn.addEventListener('click', () => this.skipCurrentStep());
+        this.guidedAudioToggle.addEventListener('click', () => this.toggleGuidedAudio());
 
         // Permitir solo letras/números en código de sesión
         this.sessionCodeInput.addEventListener('input', (e) => {
@@ -513,6 +527,7 @@ class TelemedicinePatient {
                 if (this.audioEnabled) {
                     this.speak('El examen ha finalizado. Puede relajarse.');
                 }
+                this.hideGuidedInstructions();
                 break;
 
             case 'instruction':
@@ -532,6 +547,19 @@ class TelemedicinePatient {
                 if (this.audioEnabled) {
                     this.speak(data.message);
                 }
+                break;
+
+            // Comandos de secuencia guiada
+            case 'start_guided_sequence':
+                this.startGuidedSequence(data);
+                break;
+
+            case 'next_guided_step':
+                this.nextGuidedStep(data);
+                break;
+
+            case 'complete_guided_sequence':
+                this.completeGuidedSequence(data);
                 break;
 
             default:
@@ -649,6 +677,137 @@ class TelemedicinePatient {
             this.dataStats.textContent = `📊 Transmisión: ${fps} fps | Frames: ${this.transmissionStats.frameCount}`;
             this.transmissionStats.lastUpdate = now;
         }
+    }
+
+    // ==========================================
+    // SISTEMA DE SECUENCIAS GUIADAS
+    // ==========================================
+
+    startGuidedSequence(data) {
+        console.log('🎯 Iniciando secuencia guiada:', data.examType);
+
+        this.currentGuidedSequence = {
+            examType: data.examType,
+            totalSteps: data.totalSteps,
+            currentStep: data.currentStep,
+            isActive: true
+        };
+
+        // Mostrar overlay de instrucciones guiadas
+        this.showGuidedInstructions();
+
+        // Mostrar primera instrucción
+        this.displayGuidedInstruction(data.instruction, data.currentStep + 1, data.totalSteps);
+
+        // Reproducir audio si está habilitado
+        if (this.audioEnabled && data.instruction.audio) {
+            this.speak(data.instruction.audio);
+        }
+
+        // Animar barra de progreso
+        this.animateGuidedProgress(data.instruction.duration);
+    }
+
+    nextGuidedStep(data) {
+        if (!this.currentGuidedSequence || !this.currentGuidedSequence.isActive) return;
+
+        console.log('➡️ Siguiente paso de secuencia guiada:', data.currentStep + 1, 'de', data.totalSteps);
+
+        this.currentGuidedSequence.currentStep = data.currentStep;
+
+        // Actualizar instrucción
+        this.displayGuidedInstruction(data.instruction, data.currentStep + 1, data.totalSteps);
+
+        // Reproducir audio
+        if (this.audioEnabled && data.instruction.audio) {
+            this.speak(data.instruction.audio);
+        }
+
+        // Animar barra de progreso
+        this.animateGuidedProgress(data.instruction.duration);
+    }
+
+    completeGuidedSequence(data) {
+        console.log('✅ Secuencia guiada completada');
+
+        if (this.currentGuidedSequence) {
+            this.currentGuidedSequence.isActive = false;
+        }
+
+        // Mostrar mensaje de completado
+        this.guidedInstructionIcon.textContent = '🎉';
+        this.guidedInstructionTitle.textContent = 'Secuencia Completada';
+        this.guidedInstructionText.textContent = data.message || 'Excelente trabajo, secuencia finalizada';
+        this.stepCounter.textContent = 'Finalizado';
+
+        // Completar barra de progreso
+        this.guidedProgressBar.style.width = '100%';
+
+        // Reproducir audio de finalización
+        if (this.audioEnabled) {
+            this.speak(data.message || 'Secuencia completada. Excelente trabajo.');
+        }
+
+        // Ocultar overlay después de unos segundos
+        setTimeout(() => {
+            this.hideGuidedInstructions();
+        }, 3000);
+
+        this.showMessage('🎉 Secuencia de examen completada exitosamente');
+    }
+
+    displayGuidedInstruction(instruction, stepNumber, totalSteps) {
+        this.guidedInstructionIcon.textContent = instruction.icon;
+        this.guidedInstructionTitle.textContent = instruction.title;
+        this.guidedInstructionText.textContent = instruction.text;
+        this.stepCounter.textContent = `Paso ${stepNumber} de ${totalSteps}`;
+    }
+
+    animateGuidedProgress(duration) {
+        this.guidedProgressBar.style.width = '0%';
+
+        let progress = 0;
+        const interval = 100; // ms
+        const increment = (interval / duration) * 100;
+
+        const progressAnimation = setInterval(() => {
+            progress += increment;
+
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(progressAnimation);
+            }
+
+            this.guidedProgressBar.style.width = `${progress}%`;
+        }, interval);
+    }
+
+    showGuidedInstructions() {
+        this.guidedInstructionsOverlay.classList.remove('hidden');
+    }
+
+    hideGuidedInstructions() {
+        this.guidedInstructionsOverlay.classList.add('hidden');
+    }
+
+    skipCurrentStep() {
+        console.log('⏭️ Saltando paso actual de secuencia guiada');
+
+        // Notificar al médico que se saltó el paso
+        this.socket.emit('patient_skip_step', {
+            sessionCode: this.sessionCode,
+            currentStep: this.currentGuidedSequence?.currentStep || 0
+        });
+
+        this.showMessage('⏭️ Paso saltado - Continuando con siguiente instrucción');
+    }
+
+    toggleGuidedAudio() {
+        this.audioEnabled = !this.audioEnabled;
+        this.guidedAudioToggle.textContent = this.audioEnabled ? '🔊 Audio' : '🔇 Audio';
+        this.guidedAudioToggle.classList.toggle('active', this.audioEnabled);
+
+        console.log(`🔊 Audio de instrucciones ${this.audioEnabled ? 'habilitado' : 'deshabilitado'}`);
     }
 }
 

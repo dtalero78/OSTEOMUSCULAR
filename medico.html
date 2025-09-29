@@ -244,6 +244,16 @@
                     </select>
                 </div>
 
+                <div class="control-group">
+                    <label for="examType">🔍 Tipo de Examen:</label>
+                    <select id="examType">
+                        <option value="completo">Examen Completo</option>
+                        <option value="postura">Evaluación Postural</option>
+                        <option value="rangos">Rangos de Movimiento</option>
+                        <option value="simetria">Análisis de Simetría</option>
+                    </select>
+                </div>
+
                 <button id="createSessionBtn" class="btn btn-primary">🚀 Crear Sesión</button>
             </div>
 
@@ -276,6 +286,7 @@
                 <h4>🔬 Controles de Examen</h4>
                 <div class="doctor-controls">
                     <button id="startExamBtn" class="btn btn-primary" disabled>▶️ Iniciar Examen</button>
+                    <button id="startGuidedBtn" class="btn btn-accent" disabled>🎯 Secuencia Guiada</button>
                     <button id="stopExamBtn" class="btn btn-secondary" disabled>⏹️ Detener Examen</button>
                     <button id="countdownBtn" class="btn btn-accent" disabled>⏰ Cuenta Regresiva</button>
                 </div>

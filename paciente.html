@@ -122,6 +122,93 @@
             border-radius: 10px;
         }
 
+        .instructions-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .instruction-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .instruction-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .instruction-card h3 {
+            color: #1976d2;
+            margin: 20px 0;
+            font-size: 24px;
+        }
+
+        .instruction-card p {
+            font-size: 18px;
+            margin: 20px 0;
+            color: #333;
+        }
+
+        .step-progress {
+            font-weight: bold;
+            color: #666;
+            margin: 15px 0;
+        }
+
+        .instruction-progress {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            background: #1976d2;
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s ease;
+            border-radius: 4px;
+        }
+
+        .instruction-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn-instruction {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #f0f0f0;
+            color: #333;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-instruction:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-instruction.active {
+            background: #1976d2;
+            color: white;
+        }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -182,6 +269,25 @@
         <div id="doctorCommands" class="doctor-commands hidden">
             <h4>📋 Comando Actual</h4>
             <p id="currentCommand">-</p>
+        </div>
+
+        <!-- Overlay de instrucciones guiadas -->
+        <div id="guidedInstructionsOverlay" class="instructions-overlay hidden">
+            <div class="instruction-card">
+                <div class="instruction-icon" id="guidedInstructionIcon">🏥</div>
+                <h3 id="guidedInstructionTitle">Preparando examen...</h3>
+                <p id="guidedInstructionText">Iniciando sistema de análisis...</p>
+                <div class="step-progress">
+                    <span id="stepCounter">Paso 1 de 4</span>
+                </div>
+                <div class="instruction-progress">
+                    <div class="progress-bar" id="guidedProgressBar"></div>
+                </div>
+                <div class="instruction-controls">
+                    <button id="skipStepBtn" class="btn-instruction">⏭️ Saltar</button>
+                    <button id="guidedAudioToggle" class="btn-instruction">🔊 Audio</button>
+                </div>
+            </div>
         </div>
 
         <!-- Controles del paciente -->
