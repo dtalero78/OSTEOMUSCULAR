@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examen Osteomuscular Virtual</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.15"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Examen Osteomuscular Virtual</h1>
+            <p>Análisis postural y articular en tiempo real</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Panel de control -->
+            <div class="control-panel">
+                <h3>📋 Panel de Control</h3>
+
+                <div class="control-group">
+                    <label for="patientName">👤 Nombre del Paciente:</label>
+                    <input type="text" id="patientName" placeholder="Ingrese nombre del paciente">
+                </div>
+
+                <div class="control-group">
+                    <label for="examType">🔍 Tipo de Examen:</label>
+                    <select id="examType">
+                        <option value="postura">Evaluación Postural</option>
+                        <option value="rangos">Rangos de Movimiento</option>
+                        <option value="simetria">Análisis de Simetría</option>
+                        <option value="completo">Examen Completo</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <button id="startBtn" class="btn btn-primary">▶️ Iniciar Examen</button>
+                    <button id="stopBtn" class="btn btn-secondary" disabled>⏹️ Detener</button>
+                    <button id="captureBtn" class="btn btn-accent" disabled>📸 Capturar</button>
+                </div>
+
+                <div class="status">
+                    <div id="status">🔴 Sistema desconectado</div>
+                    <div id="fps">FPS: 0</div>
+                </div>
+            </div>
+
+            <!-- Video y canvas -->
+            <div class="video-container">
+                <video id="webcam" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+
+                <!-- Overlay con información -->
+                <div class="overlay">
+                    <div id="poseInfo" class="pose-info">
+                        <h4>📊 Métricas en Tiempo Real</h4>
+                        <div id="metricsDisplay"></div>
+                    </div>
+                </div>
+
+                <!-- Instrucciones dinámicas -->
+                <div class="instructions-overlay hidden" id="instructionsOverlay">
+                    <div class="instruction-card">
+                        <div class="instruction-icon">🏥</div>
+                        <h3 id="instructionTitle">Preparando examen...</h3>
+                        <p id="instructionText">Iniciando sistema de análisis...</p>
+                        <div class="instruction-progress">
+                            <div class="progress-bar" id="progressBar"></div>
+                        </div>
+                        <div class="instruction-controls">
+                            <button id="skipBtn" class="btn-instruction">⏭️ Saltar</button>
+                            <button id="audioToggle" class="btn-instruction">🔊 Audio</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de resultados -->
+            <div class="results-panel">
+                <h3>📈 Resultados del Análisis</h3>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <h4>🏃‍♀️ Postura</h4>
+                        <div id="postureResults">
+                            <div class="metric">
+                                <span>Alineación Cervical:</span>
+                                <span id="cervicalAlign">-- °</span>
+                            </div>
+                            <div class="metric">
+                                <span>Inclinación Pélvica:</span>
+                                <span id="pelvicTilt">-- °</span>
+                            </div>
+                            <div class="metric">
+                                <span>Desviación Lateral:</span>
+                                <span id="lateralDev">-- mm</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <h4>🦴 Articulaciones</h4>
+                        <div id="jointResults">
+                            <div class="metric">
+                                <span>Hombro Derecho:</span>
+                                <span id="rightShoulder">-- °</span>
+                            </div>
+                            <div class="metric">
+                                <span>Hombro Izquierdo:</span>
+                                <span id="leftShoulder">-- °</span>
+                            </div>
+                            <div class="metric">
+                                <span>Cadera Derecha:</span>
+                                <span id="rightHip">-- °</span>
+                            </div>
+                            <div class="metric">
+                                <span>Cadera Izquierda:</span>
+                                <span id="leftHip">-- °</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="metric-card">
+                        <h4>⚖️ Simetría</h4>
+                        <div id="symmetryResults">
+                            <div class="metric">
+                                <span>Simetría Hombros:</span>
+                                <span id="shoulderSymmetry">-- %</span>
+                            </div>
+                            <div class="metric">
+                                <span>Simetría Caderas:</span>
+                                <span id="hipSymmetry">-- %</span>
+                            </div>
+                            <div class="metric">
+                                <span>Balance General:</span>
+                                <span id="overallBalance">-- %</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="exportBtn" class="btn btn-accent">📄 Exportar Informe</button>
+                    <button id="printBtn" class="btn btn-secondary">🖨️ Imprimir</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instrucciones -->
+        <div class="instructions">
+            <h3>📝 Instrucciones para el Paciente</h3>
+            <ul>
+                <li>🔹 Colóquese de pie frente a la cámara a 2 metros de distancia</li>
+                <li>🔹 Mantenga una postura natural y relajada</li>
+                <li>🔹 Asegúrese de que todo su cuerpo sea visible</li>
+                <li>🔹 Para rangos de movimiento, siga las indicaciones en pantalla</li>
+                <li>🔹 Permanezca inmóvil durante la captura de datos</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="pose-medical-analyzer.js"></script>
+</body>
+</html>
