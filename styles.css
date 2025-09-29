@@ -273,6 +273,47 @@ header p {
     margin-top: 20px;
 }
 
+.instruction-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin-top: 15px;
+}
+
+.column h4 {
+    color: #2c3e50;
+    margin-bottom: 10px;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 5px;
+}
+
+.remote-control-info {
+    background: rgba(46, 204, 113, 0.1);
+    border: 2px solid #2ecc71;
+    border-radius: 10px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.remote-control-info h4 {
+    color: #27ae60;
+    margin-bottom: 10px;
+}
+
+.remote-control-info p {
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+.remote-control-info kbd {
+    background: #34495e;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-weight: bold;
+}
+
 .instructions h3 {
     color: #2c3e50;
     margin-bottom: 15px;

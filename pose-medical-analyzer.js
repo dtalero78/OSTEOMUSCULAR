@@ -189,8 +189,11 @@ class MedicalPoseAnalyzer {
             // Asegurar que el overlay esté oculto al inicio
             this.hideInstructionsOverlay();
 
+            // Activar cámara automáticamente
+            await this.initializeCamera();
+
             console.log('✅ Sistema listo para examen médico');
-            this.updateStatus('🟡 Sistema listo - Presione "Iniciar Examen"', 'ready');
+            this.updateStatus('🟢 Cámara activa - Presione ESPACIO para iniciar o use el botón', 'ready');
         } catch (error) {
             console.error('❌ Error durante la inicialización:', error);
             this.updateStatus('❌ Error durante la inicialización del sistema', 'error');
@@ -236,10 +239,22 @@ class MedicalPoseAnalyzer {
     }
 
     setupEventListeners() {
-        this.startBtn.addEventListener('click', () => this.startExam());
+        this.startBtn.addEventListener('click', () => this.startExamWithCountdown());
         this.stopBtn.addEventListener('click', () => this.stopExam());
         this.captureBtn.addEventListener('click', () => this.captureSnapshot());
         this.exportBtn.addEventListener('click', () => this.exportReport());
+
+        // Control por teclado para inicio remoto
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !this.isAnalyzing) {
+                e.preventDefault();
+                this.startExamWithCountdown();
+            }
+            if (e.code === 'Escape' && this.isAnalyzing) {
+                e.preventDefault();
+                this.stopExam();
+            }
+        });
 
         document.getElementById('examType').addEventListener('change', (e) => {
             this.currentExamType = e.target.value;
@@ -284,9 +299,10 @@ class MedicalPoseAnalyzer {
         }
     }
 
-    async startExam() {
+    // Nueva función para inicializar la cámara sin iniciar el examen
+    async initializeCamera() {
         try {
-            console.log('🚀 Iniciando examen médico...');
+            console.log('📹 Inicializando cámara...');
 
             // Obtener acceso a la cámara
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -301,32 +317,130 @@ class MedicalPoseAnalyzer {
             this.video.play();
 
             this.video.onloadedmetadata = () => {
-                console.log('📹 Video cargado:', this.video.videoWidth, 'x', this.video.videoHeight);
+                console.log('📹 Cámara cargada:', this.video.videoWidth, 'x', this.video.videoHeight);
 
                 this.canvas.width = this.video.videoWidth;
                 this.canvas.height = this.video.videoHeight;
 
                 console.log('🎨 Canvas configurado:', this.canvas.width, 'x', this.canvas.height);
 
-                this.isAnalyzing = true;
-                this.updateStatus('🟢 Analizando pose del paciente...', 'analyzing');
+                // Solo mostrar la cámara, no iniciar análisis aún
+                this.showCameraPreview();
 
-                // Habilitar controles
-                this.startBtn.disabled = true;
-                this.stopBtn.disabled = false;
-                this.captureBtn.disabled = false;
-
-                // Verificar que MediaPipe esté listo
-                console.log('🤖 MediaPipe listo:', !!this.poseLandmarker);
-
-                // Iniciar análisis inmediatamente
-                this.analyzeFrame();
-
-                // Iniciar sistema de instrucciones guiadas después de un breve retraso
-                setTimeout(() => {
-                    this.startInstructionSequence();
-                }, 1000);
+                this.updateStatus('🟢 Cámara lista - Posiciónese a 2 metros y presione ESPACIO', 'camera-ready');
             };
+
+        } catch (error) {
+            console.error('❌ Error accediendo a la cámara:', error);
+            this.updateStatus('❌ Error: No se puede acceder a la cámara', 'error');
+        }
+    }
+
+    // Función para mostrar vista previa de la cámara sin análisis
+    showCameraPreview() {
+        if (!this.video.videoWidth || !this.video.videoHeight) return;
+
+        this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+
+        // Dibujar guías de posicionamiento
+        this.drawPositioningGuides();
+
+        // Continuar mostrando preview hasta que inicie el examen
+        if (!this.isAnalyzing) {
+            requestAnimationFrame(() => this.showCameraPreview());
+        }
+    }
+
+    // Dibujar guías visuales para ayudar al posicionamiento
+    drawPositioningGuides() {
+        const ctx = this.ctx;
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+
+        // Dibujar marco central para posicionamiento
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 10]);
+
+        const frameWidth = width * 0.3;
+        const frameHeight = height * 0.8;
+        const frameX = (width - frameWidth) / 2;
+        const frameY = (height - frameHeight) / 2;
+
+        ctx.strokeRect(frameX, frameY, frameWidth, frameHeight);
+
+        // Texto de instrucciones
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#00ff00';
+        ctx.font = '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('Colóquese dentro del marco', width / 2, frameY - 20);
+        ctx.fillText('Presione ESPACIO para iniciar', width / 2, frameY + frameHeight + 40);
+    }
+
+    // Nueva función con cuenta regresiva
+    async startExamWithCountdown() {
+        if (this.isAnalyzing) return;
+
+        // Mostrar cuenta regresiva
+        await this.showCountdown();
+
+        // Iniciar examen real
+        this.startExam();
+    }
+
+    // Cuenta regresiva de 5 segundos
+    async showCountdown() {
+        return new Promise((resolve) => {
+            let count = 5;
+            this.updateStatus(`🔢 Iniciando en ${count} segundos...`, 'countdown');
+
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    this.updateStatus(`🔢 Iniciando en ${count} segundos...`, 'countdown');
+
+                    // Mostrar número en el canvas
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.font = '120px Arial';
+                    this.ctx.textAlign = 'center';
+                    this.ctx.fillText(count.toString(), this.canvas.width / 2, this.canvas.height / 2);
+
+                } else {
+                    clearInterval(countdownInterval);
+                    this.updateStatus('🚀 ¡Iniciando examen!', 'starting');
+                    resolve();
+                }
+            }, 1000);
+        });
+    }
+
+    async startExam() {
+        try {
+            console.log('🚀 Iniciando examen médico...');
+
+            // La cámara ya está inicializada, solo cambiar a modo análisis
+            this.isAnalyzing = true;
+            this.updateStatus('🟢 Analizando pose del paciente...', 'analyzing');
+
+            // Habilitar controles
+            this.startBtn.disabled = true;
+            this.stopBtn.disabled = false;
+            this.captureBtn.disabled = false;
+
+            // Verificar que MediaPipe esté listo
+            console.log('🤖 MediaPipe listo:', !!this.poseLandmarker);
+
+            // Iniciar análisis inmediatamente
+            this.analyzeFrame();
+
+            // Iniciar sistema de instrucciones guiadas después de un breve retraso
+            setTimeout(() => {
+                this.startInstructionSequence();
+            }, 1000);
 
         } catch (error) {
             console.error('❌ Error accediendo a la cámara:', error);

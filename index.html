@@ -35,9 +35,16 @@
                 </div>
 
                 <div class="control-group">
-                    <button id="startBtn" class="btn btn-primary">▶️ Iniciar Examen</button>
-                    <button id="stopBtn" class="btn btn-secondary" disabled>⏹️ Detener</button>
+                    <button id="startBtn" class="btn btn-primary">▶️ Iniciar Examen (o presione ESPACIO)</button>
+                    <button id="stopBtn" class="btn btn-secondary" disabled>⏹️ Detener (ESC)</button>
                     <button id="captureBtn" class="btn btn-accent" disabled>📸 Capturar</button>
+                </div>
+
+                <div class="remote-control-info">
+                    <h4>🎮 Control Remoto</h4>
+                    <p><kbd>ESPACIO</kbd> - Iniciar examen con cuenta regresiva</p>
+                    <p><kbd>ESC</kbd> - Detener examen</p>
+                    <p>🎙️ Comandos de voz disponibles</p>
                 </div>
 
                 <div class="status">
@@ -149,14 +156,29 @@
 
         <!-- Instrucciones -->
         <div class="instructions">
-            <h3>📝 Instrucciones para el Paciente</h3>
-            <ul>
-                <li>🔹 Colóquese de pie frente a la cámara a 2 metros de distancia</li>
-                <li>🔹 Mantenga una postura natural y relajada</li>
-                <li>🔹 Asegúrese de que todo su cuerpo sea visible</li>
-                <li>🔹 Para rangos de movimiento, siga las indicaciones en pantalla</li>
-                <li>🔹 Permanezca inmóvil durante la captura de datos</li>
-            </ul>
+            <h3>📝 Instrucciones Mejoradas</h3>
+            <div class="instruction-columns">
+                <div class="column">
+                    <h4>👥 Para el Paciente</h4>
+                    <ul>
+                        <li>🔹 Colóquese a 2 metros de la cámara</li>
+                        <li>🔹 Mantenga postura natural y relajada</li>
+                        <li>🔹 Asegúrese de estar dentro del marco verde</li>
+                        <li>🔹 Todo su cuerpo debe ser visible</li>
+                        <li>🔹 Permanecer quieto durante el análisis</li>
+                    </ul>
+                </div>
+                <div class="column">
+                    <h4>👩‍⚕️ Para el Profesional</h4>
+                    <ul>
+                        <li>🔹 La cámara se activa automáticamente</li>
+                        <li>🔹 Use ESPACIO para iniciar con cuenta regresiva</li>
+                        <li>🔹 ESC para detener en cualquier momento</li>
+                        <li>🔹 Control remoto evita desplazamientos</li>
+                        <li>🔹 Revise posicionamiento antes de iniciar</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 

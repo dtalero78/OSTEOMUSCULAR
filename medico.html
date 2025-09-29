@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Médico - Examen Osteomuscular Virtual</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .doctor-interface {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 20px;
+            height: 100vh;
+            padding: 20px;
+            max-width: none;
+        }
+
+        .doctor-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .session-panel {
+            background: #e3f2fd;
+        }
+
+        .video-panel {
+            background: #1a1a1a;
+            border-radius: 10px;
+            position: relative;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .patient-video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .patient-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .pose-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .session-code-display {
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            color: #1976d2;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 3px dashed #1976d2;
+            margin: 20px 0;
+            letter-spacing: 5px;
+        }
+
+        .patient-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #4caf50;
+        }
+
+        .connection-status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .status-waiting { background: #fff3e0; color: #ef6c00; }
+        .status-connected { background: #e8f5e8; color: #2e7d32; }
+        .status-error { background: #ffebee; color: #c62828; }
+
+        .metrics-panel {
+            background: #f3e5f5;
+        }
+
+        .metric-group {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #9c27b0;
+        }
+
+        .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+
+        .metric-normal { color: #4caf50; }
+        .metric-warning { color: #ff9800; }
+        .metric-alert { color: #f44336; }
+
+        .doctor-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .control-group {
+            margin: 15px 0;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .instruction-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .quick-instructions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .quick-btn {
+            padding: 8px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            background: #e3f2fd;
+            color: #1976d2;
+            cursor: pointer;
+        }
+
+        .quick-btn:hover {
+            background: #bbdefb;
+        }
+
+        .exam-controls {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .capture-panel {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .snapshots-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .snapshot-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+            border-left: 3px solid #ff9800;
+            font-size: 12px;
+        }
+
+        .no-patient-message {
+            color: white;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .stats-panel {
+            background: #fce4ec;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+
+        .transmission-stats {
+            font-family: monospace;
+            font-size: 12px;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .doctor-notes {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+        }
+    </style>
+</head>
+<body>
+    <div class="doctor-interface">
+        <!-- Panel de Sesión y Control -->
+        <div class="doctor-panel session-panel">
+            <h3>👨‍⚕️ Panel del Médico</h3>
+
+            <!-- Información del médico -->
+            <div class="doctor-form">
+                <div class="control-group">
+                    <label for="doctorName">👤 Nombre del Médico:</label>
+                    <input type="text" id="doctorName" placeholder="Dr. Nombre Apellido">
+                </div>
+
+                <div class="control-group">
+                    <label for="doctorSpecialty">🏥 Especialidad:</label>
+                    <select id="doctorSpecialty">
+                        <option value="traumatologia">Traumatología</option>
+                        <option value="fisiatria">Fisiatría</option>
+                        <option value="fisioterapia">Fisioterapia</option>
+                        <option value="medicina_general">Medicina General</option>
+                        <option value="reumatologia">Reumatología</option>
+                    </select>
+                </div>
+
+                <button id="createSessionBtn" class="btn btn-primary">🚀 Crear Sesión</button>
+            </div>
+
+            <!-- Código de sesión -->
+            <div id="sessionCodeContainer" class="hidden">
+                <h4>📱 Código para el Paciente</h4>
+                <div id="sessionCodeDisplay" class="session-code-display">------</div>
+                <p style="text-align: center; font-size: 14px; color: #666;">
+                    Comparta este código con el paciente
+                </p>
+            </div>
+
+            <!-- Estado de conexión -->
+            <div id="connectionStatus" class="connection-status status-waiting">
+                🟡 Esperando conexión de paciente
+            </div>
+
+            <!-- Información del paciente -->
+            <div id="patientInfo" class="patient-info hidden">
+                <h4>👤 Información del Paciente</h4>
+                <div id="patientDetails">
+                    <p><strong>Nombre:</strong> <span id="patientName">-</span></p>
+                    <p><strong>Edad:</strong> <span id="patientAge">-</span></p>
+                    <p><strong>Conectado:</strong> <span id="connectionTime">-</span></p>
+                </div>
+            </div>
+
+            <!-- Controles de examen -->
+            <div class="exam-controls">
+                <h4>🔬 Controles de Examen</h4>
+                <div class="doctor-controls">
+                    <button id="startExamBtn" class="btn btn-primary" disabled>▶️ Iniciar Examen</button>
+                    <button id="stopExamBtn" class="btn btn-secondary" disabled>⏹️ Detener Examen</button>
+                    <button id="countdownBtn" class="btn btn-accent" disabled>⏰ Cuenta Regresiva</button>
+                </div>
+            </div>
+
+            <!-- Instrucciones rápidas -->
+            <div class="control-group">
+                <label>📋 Instrucciones Rápidas:</label>
+                <div class="quick-instructions">
+                    <button class="quick-btn" data-instruction="Posición de pie, brazos relajados">🧍 Posición Base</button>
+                    <button class="quick-btn" data-instruction="Levante ambos brazos lateralmente">🙋‍♀️ Brazos Arriba</button>
+                    <button class="quick-btn" data-instruction="Mire directamente a la cámara">👀 Vista Frontal</button>
+                    <button class="quick-btn" data-instruction="Manténgase quieto por favor">⏸️ Quieto</button>
+                    <button class="quick-btn" data-instruction="Puede relajarse">😌 Relajarse</button>
+                    <button class="quick-btn" data-instruction="Gire lentamente a la izquierda">↶ Girar Izq</button>
+                </div>
+            </div>
+
+            <!-- Instrucción personalizada -->
+            <div class="control-group">
+                <label for="customInstruction">✍️ Instrucción Personalizada:</label>
+                <input type="text" id="customInstruction" class="instruction-input"
+                       placeholder="Escriba una instrucción personalizada">
+                <button id="sendInstructionBtn" class="btn btn-accent" disabled>📤 Enviar</button>
+            </div>
+        </div>
+
+        <!-- Panel de Video -->
+        <div class="video-panel">
+            <div id="patientVideoContainer" class="patient-video-container hidden">
+                <canvas id="patientCanvas"></canvas>
+                <div id="videoOverlay" class="pose-overlay"></div>
+            </div>
+            <div id="noPatientMessage" class="no-patient-message">
+                <h3>👤 Esperando conexión del paciente</h3>
+                <p>El paciente debe ingresar el código de sesión</p>
+            </div>
+        </div>
+
+        <!-- Panel de Métricas -->
+        <div class="doctor-panel metrics-panel">
+            <h3>📊 Análisis en Tiempo Real</h3>
+
+            <!-- Métricas posturales -->
+            <div class="metric-group">
+                <h4>🏃‍♀️ Postura</h4>
+                <div class="metric">
+                    <span>Alineación Cervical:</span>
+                    <span id="cervicalAlign" class="metric-value">-- °</span>
+                </div>
+                <div class="metric">
+                    <span>Inclinación Pélvica:</span>
+                    <span id="pelvicTilt" class="metric-value">-- °</span>
+                </div>
+                <div class="metric">
+                    <span>Desviación Lateral:</span>
+                    <span id="lateralDev" class="metric-value">-- mm</span>
+                </div>
+            </div>
+
+            <!-- Métricas articulares -->
+            <div class="metric-group">
+                <h4>🦴 Articulaciones</h4>
+                <div class="metric">
+                    <span>Hombro Derecho:</span>
+                    <span id="rightShoulder" class="metric-value">-- °</span>
+                </div>
+                <div class="metric">
+                    <span>Hombro Izquierdo:</span>
+                    <span id="leftShoulder" class="metric-value">-- °</span>
+                </div>
+                <div class="metric">
+                    <span>Cadera Derecha:</span>
+                    <span id="rightHip" class="metric-value">-- °</span>
+                </div>
+                <div class="metric">
+                    <span>Cadera Izquierda:</span>
+                    <span id="leftHip" class="metric-value">-- °</span>
+                </div>
+            </div>
+
+            <!-- Métricas de simetría -->
+            <div class="metric-group">
+                <h4>⚖️ Simetría</h4>
+                <div class="metric">
+                    <span>Simetría Hombros:</span>
+                    <span id="shoulderSymmetry" class="metric-value">-- %</span>
+                </div>
+                <div class="metric">
+                    <span>Simetría Caderas:</span>
+                    <span id="hipSymmetry" class="metric-value">-- %</span>
+                </div>
+                <div class="metric">
+                    <span>Balance General:</span>
+                    <span id="overallBalance" class="metric-value">-- %</span>
+                </div>
+            </div>
+
+            <!-- Panel de captura -->
+            <div class="capture-panel">
+                <h4>📸 Capturas</h4>
+                <button id="captureBtn" class="btn btn-primary" disabled>📸 Capturar Momento</button>
+                <div id="snapshotsList" class="snapshots-list">
+                    <!-- Snapshots aparecerán aquí -->
+                </div>
+            </div>
+
+            <!-- Estadísticas de transmisión -->
+            <div class="stats-panel">
+                <h4>📡 Estadísticas</h4>
+                <div id="transmissionStats" class="transmission-stats">
+                    FPS: 0<br>
+                    Latencia: 0ms<br>
+                    Frames: 0<br>
+                    Calidad: Esperando...
+                </div>
+            </div>
+
+            <!-- Notas del médico -->
+            <div class="control-group">
+                <label for="doctorNotes">📝 Notas del Examen:</label>
+                <textarea id="doctorNotes" class="doctor-notes"
+                          placeholder="Escriba sus observaciones aquí..."></textarea>
+            </div>
+
+            <!-- Acciones finales -->
+            <div class="doctor-controls">
+                <button id="generateReportBtn" class="btn btn-accent" disabled>📄 Generar Informe</button>
+                <button id="endSessionBtn" class="btn btn-secondary" disabled>🔚 Finalizar Sesión</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="telemedicine-doctor.js"></script>
+</body>
+</html>

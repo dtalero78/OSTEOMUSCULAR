@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paciente - Examen Osteomuscular Virtual</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.15"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .patient-interface {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .connection-panel {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .session-code-input {
+            font-size: 24px;
+            text-align: center;
+            padding: 15px;
+            border: 3px solid #ddd;
+            border-radius: 8px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            width: 200px;
+            margin: 10px;
+        }
+
+        .connection-status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .status-disconnected { background: #ffebee; color: #c62828; }
+        .status-connecting { background: #fff3e0; color: #ef6c00; }
+        .status-connected { background: #e8f5e8; color: #2e7d32; }
+        .status-examining { background: #e3f2fd; color: #1976d2; }
+
+        .video-preview {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .patient-video {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 10px;
+            border: 3px solid #00ff00;
+        }
+
+        .instructions-panel {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .doctor-commands {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #ff9800;
+        }
+
+        .patient-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .patient-form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .countdown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 72px;
+            font-weight: bold;
+            border-radius: 10px;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <div class="container patient-interface">
+        <header>
+            <h1>🏥 Paciente - Examen Virtual</h1>
+            <p>Conéctese con su médico para el examen postural</p>
+        </header>
+
+        <!-- Panel de conexión -->
+        <div class="connection-panel">
+            <h3>📱 Conexión con el Médico</h3>
+
+            <div id="connectionForm">
+                <div class="patient-form">
+                    <div class="form-group">
+                        <label for="patientName">👤 Su Nombre:</label>
+                        <input type="text" id="patientName" placeholder="Ingrese su nombre completo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patientAge">📅 Edad:</label>
+                        <input type="number" id="patientAge" placeholder="Ingrese su edad" min="1" max="120">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sessionCode">🔢 Código de Sesión (proporcionado por el médico):</label>
+                        <input type="text" id="sessionCode" class="session-code-input"
+                               placeholder="ABC123" maxlength="6">
+                    </div>
+
+                    <button id="connectBtn" class="btn btn-primary">🔗 Conectar con Médico</button>
+                </div>
+            </div>
+
+            <div id="connectionStatus" class="connection-status status-disconnected">
+                🔴 Desconectado - Ingrese el código de sesión
+            </div>
+        </div>
+
+        <!-- Video del paciente -->
+        <div class="video-preview">
+            <video id="patientVideo" class="patient-video" autoplay playsinline muted></video>
+            <canvas id="poseCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+            <div id="countdownOverlay" class="countdown-overlay hidden">5</div>
+        </div>
+
+        <!-- Panel de instrucciones del médico -->
+        <div class="instructions-panel hidden" id="instructionsPanel">
+            <h4>👩‍⚕️ Instrucciones del Médico</h4>
+            <div id="doctorInstructions">
+                Esperando instrucciones del médico...
+            </div>
+        </div>
+
+        <!-- Comandos recibidos del médico -->
+        <div id="doctorCommands" class="doctor-commands hidden">
+            <h4>📋 Comando Actual</h4>
+            <p id="currentCommand">-</p>
+        </div>
+
+        <!-- Controles del paciente -->
+        <div class="patient-controls">
+            <button id="testCameraBtn" class="btn btn-secondary">📹 Probar Cámara</button>
+            <button id="toggleAudioBtn" class="btn btn-accent">🔊 Audio</button>
+            <button id="emergencyStopBtn" class="btn" style="background: #f44336; color: white;">🚨 Parar Emergencia</button>
+        </div>
+
+        <!-- Estado de transmisión -->
+        <div class="status-panel">
+            <div id="transmissionStatus">📡 Transmisión: Inactiva</div>
+            <div id="dataStats">📊 Datos: 0 fps</div>
+        </div>
+    </div>
+
+    <script src="telemedicine-patient.js"></script>
+</body>
+</html>
