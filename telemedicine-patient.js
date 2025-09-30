@@ -315,18 +315,21 @@ class TelemedicinePatient {
             console.log('💾 Stream local guardado para WebRTC');
 
             this.video.srcObject = stream;
-            await this.video.play();
 
+            // Configurar handler ANTES de play()
             this.video.onloadedmetadata = async () => {
                 this.canvas.width = this.video.videoWidth;
                 this.canvas.height = this.video.videoHeight;
                 console.log('📹 Cámara iniciada:', this.video.videoWidth, 'x', this.video.videoHeight);
+                console.log('🎨 Canvas configurado:', this.canvas.width, 'x', this.canvas.height);
 
                 // WebRTC se iniciará cuando el servidor envíe 'doctor-ready-for-webrtc'
                 console.log('⏳ Esperando que el médico esté listo para WebRTC...');
 
                 this.startTransmission();
             };
+
+            await this.video.play();
 
         } catch (error) {
             console.error('❌ Error accediendo a la cámara:', error);

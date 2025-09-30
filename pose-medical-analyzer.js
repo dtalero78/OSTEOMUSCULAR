@@ -314,8 +314,8 @@ class MedicalPoseAnalyzer {
             });
 
             this.video.srcObject = stream;
-            this.video.play();
 
+            // Configurar handler ANTES de play()
             this.video.onloadedmetadata = () => {
                 console.log('📹 Cámara cargada:', this.video.videoWidth, 'x', this.video.videoHeight);
 
@@ -329,6 +329,8 @@ class MedicalPoseAnalyzer {
 
                 this.updateStatus('🟢 Cámara lista - Posiciónese a 2 metros y presione ESPACIO', 'camera-ready');
             };
+
+            this.video.play();
 
         } catch (error) {
             console.error('❌ Error accediendo a la cámara:', error);
