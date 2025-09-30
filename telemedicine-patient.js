@@ -471,6 +471,12 @@ class TelemedicinePatient {
     }
 
     drawPoseLandmarks(landmarks) {
+        // Ocultar mensaje de "esperando análisis" cuando se detectan landmarks
+        const noAnalysisMessage = document.getElementById('noAnalysisMessage');
+        if (noAnalysisMessage && noAnalysisMessage.style.display !== 'none') {
+            noAnalysisMessage.style.display = 'none';
+        }
+
         const pointRadius = 4;
         const lineWidth = 2;
 
