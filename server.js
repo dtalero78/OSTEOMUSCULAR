@@ -118,6 +118,15 @@ io.on('connection', (socket) => {
             message: 'Conectado con el médico'
         });
 
+        // Dar tiempo al médico para configurarse y luego notificar al paciente para iniciar WebRTC
+        setTimeout(() => {
+            socket.emit('doctor-ready-for-webrtc', {
+                sessionCode,
+                message: 'Médico listo para recibir video'
+            });
+            console.log(`📹 Notificando al paciente que médico está listo para WebRTC: ${sessionCode}`);
+        }, 500);
+
         console.log(`👤 Paciente conectado a sesión: ${sessionCode}`);
     });
 
@@ -157,22 +166,31 @@ io.on('connection', (socket) => {
 
     // Transmitir video streaming (WebRTC signaling)
     socket.on('webrtc-offer', ({ sessionCode, offer }) => {
+        console.log(`📹 WebRTC Offer recibido - Sesión: ${sessionCode}, Socket: ${socket.id}`);
         const session = activeSessions.get(sessionCode);
 
         if (session && session.patientId === socket.id) {
+            console.log(`✅ Reenviando offer al médico: ${session.doctorId}`);
             io.to(session.doctorId).emit('webrtc-offer', { offer });
+        } else {
+            console.log(`❌ Offer rechazado - Sesión válida: ${!!session}, Socket correcto: ${session?.patientId === socket.id}`);
         }
     });
 
     socket.on('webrtc-answer', ({ sessionCode, answer }) => {
+        console.log(`📹 WebRTC Answer recibido - Sesión: ${sessionCode}, Socket: ${socket.id}`);
         const session = activeSessions.get(sessionCode);
 
         if (session && session.doctorId === socket.id) {
+            console.log(`✅ Reenviando answer al paciente: ${session.patientId}`);
             io.to(session.patientId).emit('webrtc-answer', { answer });
+        } else {
+            console.log(`❌ Answer rechazado - Sesión válida: ${!!session}, Socket correcto: ${session?.doctorId === socket.id}`);
         }
     });
 
     socket.on('webrtc-ice-candidate', ({ sessionCode, candidate }) => {
+        console.log(`🧊 ICE Candidate recibido - Sesión: ${sessionCode}`);
         const session = activeSessions.get(sessionCode);
 
         if (session) {
@@ -181,8 +199,11 @@ io.on('connection', (socket) => {
                            session.doctorId : session.patientId;
 
             if (targetId) {
+                console.log(`✅ Reenviando ICE candidate a: ${targetId}`);
                 io.to(targetId).emit('webrtc-ice-candidate', { candidate });
             }
+        } else {
+            console.log(`❌ ICE Candidate rechazado - Sesión no encontrada`);
         }
     });
 

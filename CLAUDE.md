@@ -234,45 +234,41 @@ The application uses specific medical thresholds defined in the code:
 
 ## Recent Improvements (Latest)
 
-### Skeleton Visualization Fixes
+### WebRTC Video Streaming Fix (2025-09-30)
+- **Synchronization Issue Resolved**: Fixed timing problem where patient sent WebRTC offer before doctor was ready
+- **Server-side Coordination**: Added `doctor-ready-for-webrtc` event with 500ms delay after patient connection
+- **Patient-side Wait**: Patient now waits for doctor readiness signal before initiating WebRTC connection
+- **Status Messages**: Improved UI feedback with context-aware messages:
+  - Before patient connects: "👤 Esperando conexión del paciente"
+  - Patient connected, no data: "⏳ Esperando stream de datos del paciente..."
+  - Data flowing: Message auto-hides, skeleton displays
+- **Result**: WebRTC video streaming now works reliably, doctor receives patient video feed successfully
+
+### Key Changes
+**server.js**:
+- Added 500ms delayed `doctor-ready-for-webrtc` event after `session-joined`
+- Ensures doctor interface is fully initialized before WebRTC negotiation
+
+**telemedicine-patient.js**:
+- Listens for `doctor-ready-for-webrtc` before calling `setupWebRTC()`
+- Removed premature WebRTC initialization from `startCamera()`
+
+**telemedicine-doctor.js**:
+- Dynamic status messages based on connection state
+- Auto-hide message when pose data arrives
+- Proper message restoration on patient disconnect
+
+### Skeleton Visualization Fixes (Previous)
 - **Patient Interface**: Fixed skeleton not appearing over video by adding `z-index: 10` and `pointer-events: none` to pose canvas
 - **Doctor Interface**: Added proper CSS styling for analysis canvas with dark background and explicit dimensions
 - **Canvas Layering**: Corrected positioning of "no patient" message to not interfere with skeleton display
 - **Real-time Display**: Both patient and doctor now properly see skeleton visualization during telemedicine sessions
 
-### CSS Fixes Applied
-```css
-/* Patient Canvas - Shows skeleton over video */
-#poseCanvas {
-    z-index: 10;
-    pointer-events: none;
-}
-
-/* Doctor Canvas - Medical analysis display */
-#patientCanvas {
-    width: 100%;
-    height: 100%;
-    max-width: 600px;
-    max-height: 400px;
-    border: 1px solid #333;
-    background: rgba(0, 0, 0, 0.9);
-    z-index: 10;
-    position: relative;
-}
-
-/* Proper message positioning */
-.no-patient-message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 5;
-}
-```
-
 ### Verified Functionality
+- ✅ WebRTC video streaming working (patient video appears on doctor screen)
 - ✅ Patient sees skeleton overlay on their video feed
 - ✅ Doctor sees skeleton analysis in dedicated canvas
 - ✅ Real-time streaming of pose data working correctly
 - ✅ Session management and doctor-patient connections stable
 - ✅ Medical calculations and guided sequences operational
+- ✅ Context-aware status messages for better UX

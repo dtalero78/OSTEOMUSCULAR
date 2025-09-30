@@ -1,0 +1,33 @@
+este es el console del paciente:
+Uncaught SyntaxError: Unexpected token 'export'Comprende este error
+telemedicine-patient.js:827 👤 Iniciando interfaz del paciente...
+telemedicine-patient.js:54 👤 Inicializando interfaz del paciente...
+vision_wasm_internal.js:10 I0930 20:30:00.471000 1895072 gl_context.cc:374] GL version: 3.0 (OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))), renderer: WebKit WebGL
+vision_wasm_internal.js:10 W0930 20:30:00.472000 1895072 gl_context.cc:1060] OpenGL error checking is disabled
+custom_dbg @ vision_wasm_internal.js:10Comprende esta advertencia
+vision_wasm_internal.js:10 Graph successfully started running.
+telemedicine-patient.js:226 ✅ MediaPipe inicializado
+telemedicine-patient.js:69 ✅ Interfaz del paciente lista
+telemedicine-patient.js:144 🔌 Conectado al servidor
+telemedicine-patient.js:262 🔗 Intentando conectar a sesión: D65CQB
+telemedicine-patient.js:149 ✅ Conectado con médico: Conectado con el médico
+telemedicine-patient.js:267 📹 Iniciando cámara...
+
+Este es el del médico:
+Uncaught SyntaxError: Unexpected token 'export'Comprende este error
+telemedicine-patient.js:827 👤 Iniciando interfaz del paciente...
+telemedicine-patient.js:54 👤 Inicializando interfaz del paciente...
+vision_wasm_internal.js:10 I0930 20:30:00.471000 1895072 gl_context.cc:374] GL version: 3.0 (OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))), renderer: WebKit WebGL
+vision_wasm_internal.js:10 W0930 20:30:00.472000 1895072 gl_context.cc:1060] OpenGL error checking is disabled
+custom_dbg @ vision_wasm_internal.js:10Comprende esta advertencia
+vision_wasm_internal.js:10 Graph successfully started running.
+telemedicine-patient.js:226 ✅ MediaPipe inicializado
+telemedicine-patient.js:69 ✅ Interfaz del paciente lista
+telemedicine-patient.js:144 🔌 Conectado al servidor
+telemedicine-patient.js:262 🔗 Intentando conectar a sesión: D65CQB
+telemedicine-patient.js:149 ✅ Conectado con médico: Conectado con el médico
+telemedicine-patient.js:267 📹 Iniciando cámara...
+
+
+Pero en la pantalla del médico dónde debería salir el video sale:
+Video Feed(WebRTC Pendiente)

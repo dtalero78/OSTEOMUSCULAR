@@ -186,6 +186,15 @@ class TelemedicinePatient {
             this.stopTransmission();
         });
 
+        // Médico listo para WebRTC
+        this.socket.on('doctor-ready-for-webrtc', ({ sessionCode, message }) => {
+            console.log('📹 Médico listo para recibir video, iniciando WebRTC...');
+            // Iniciar WebRTC ahora que el médico está listo
+            if (this.video && this.video.srcObject) {
+                this.setupWebRTC(this.video.srcObject);
+            }
+        });
+
         // WebRTC signaling
         this.socket.on('webrtc-answer', async ({ answer }) => {
             console.log('📹 Respuesta WebRTC recibida');
@@ -296,8 +305,8 @@ class TelemedicinePatient {
                 this.canvas.height = this.video.videoHeight;
                 console.log('📹 Cámara iniciada:', this.video.videoWidth, 'x', this.video.videoHeight);
 
-                // Iniciar WebRTC para transmitir video al médico
-                await this.setupWebRTC(stream);
+                // WebRTC se iniciará cuando el servidor envíe 'doctor-ready-for-webrtc'
+                console.log('⏳ Esperando que el médico esté listo para WebRTC...');
 
                 this.startTransmission();
             };
@@ -311,6 +320,13 @@ class TelemedicinePatient {
     async setupWebRTC(stream) {
         try {
             console.log('🔗 Configurando WebRTC...');
+
+            if (!this.sessionCode) {
+                console.error('❌ No hay sessionCode disponible para WebRTC');
+                return;
+            }
+
+            console.log('📋 SessionCode disponible:', this.sessionCode);
 
             // Crear peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
@@ -346,10 +362,12 @@ class TelemedicinePatient {
 
             // Enviar offer al médico
             console.log('📤 Enviando WebRTC offer al médico');
+            console.log('📋 Offer SDP:', offer.type, offer.sdp?.substring(0, 50) + '...');
             this.socket.emit('webrtc-offer', {
                 sessionCode: this.sessionCode,
                 offer: offer
             });
+            console.log('✅ Offer enviado con sessionCode:', this.sessionCode);
 
         } catch (error) {
             console.error('❌ Error configurando WebRTC:', error);

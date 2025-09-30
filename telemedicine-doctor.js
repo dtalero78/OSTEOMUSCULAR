@@ -390,6 +390,19 @@ class TelemedicineDoctor {
     async handleWebRTCOffer(offer) {
         try {
             console.log('🔗 Configurando WebRTC en lado del médico...');
+            console.log('📋 Offer recibido:', offer?.type, offer?.sdp?.substring(0, 50) + '...');
+
+            if (!this.sessionCode) {
+                console.error('❌ Médico no tiene sessionCode activo');
+                return;
+            }
+
+            if (!this.patientConnected) {
+                console.error('❌ No hay paciente conectado');
+                return;
+            }
+
+            console.log('✅ Médico listo para aceptar WebRTC con sesión:', this.sessionCode);
 
             // Crear peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
@@ -447,10 +460,12 @@ class TelemedicineDoctor {
 
             // Enviar answer al paciente
             console.log('📤 Enviando WebRTC answer al paciente');
+            console.log('📋 Answer SDP:', answer.type, answer.sdp?.substring(0, 50) + '...');
             this.socket.emit('webrtc-answer', {
                 sessionCode: this.sessionCode,
                 answer: answer
             });
+            console.log('✅ Answer enviado con sessionCode:', this.sessionCode);
 
         } catch (error) {
             console.error('❌ Error configurando WebRTC:', error);
@@ -696,13 +711,21 @@ class TelemedicineDoctor {
         this.canvas.style.objectFit = 'contain';
 
         this.patientVideoContainer.classList.remove('hidden');
-        this.noPatientMessage.style.display = 'none';
+
+        // Mostrar mensaje de espera hasta que lleguen datos
+        this.noPatientMessage.innerHTML = '<h3>⏳ Esperando stream de datos del paciente...</h3>';
+        this.noPatientMessage.style.display = 'flex';
 
         console.log('📊 Canvas configurado para análisis de esqueleto:', this.canvas.width, 'x', this.canvas.height);
     }
 
     drawPoseOnCanvas(landmarks) {
         if (!landmarks || landmarks.length === 0) return;
+
+        // Ocultar mensaje de espera cuando llegan datos
+        if (this.noPatientMessage.style.display !== 'none') {
+            this.noPatientMessage.style.display = 'none';
+        }
 
         // Limpiar canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -1016,6 +1039,7 @@ class TelemedicineDoctor {
     clearCanvas() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.patientVideoContainer.classList.add('hidden');
+        this.noPatientMessage.innerHTML = '<h3>👤 Esperando conexión del paciente</h3>';
         this.noPatientMessage.style.display = 'flex';
     }
 
