@@ -49,6 +49,7 @@ class TelemedicinePatient {
 
         // WebRTC configuration
         this.peerConnection = null;
+        this.localStream = null; // Guardar el stream local para WebRTC
         this.iceServers = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -190,8 +191,20 @@ class TelemedicinePatient {
         this.socket.on('doctor-ready-for-webrtc', ({ sessionCode, message }) => {
             console.log('📹 Médico listo para recibir video, iniciando WebRTC...');
             // Iniciar WebRTC ahora que el médico está listo
-            if (this.video && this.video.srcObject) {
-                this.setupWebRTC(this.video.srcObject);
+            if (this.localStream) {
+                console.log('✅ Stream local disponible, configurando WebRTC');
+                this.setupWebRTC(this.localStream);
+            } else {
+                console.log('⏳ Stream local no disponible aún, esperando...');
+                // Reintentar después de 1 segundo si el stream no está listo
+                setTimeout(() => {
+                    if (this.localStream) {
+                        console.log('✅ Stream local ahora disponible, configurando WebRTC');
+                        this.setupWebRTC(this.localStream);
+                    } else {
+                        console.error('❌ Stream local no disponible después de espera');
+                    }
+                }, 1000);
             }
         });
 
@@ -296,6 +309,10 @@ class TelemedicinePatient {
                     facingMode: 'user'
                 }
             });
+
+            // Guardar el stream local para WebRTC
+            this.localStream = stream;
+            console.log('💾 Stream local guardado para WebRTC');
 
             this.video.srcObject = stream;
             await this.video.play();

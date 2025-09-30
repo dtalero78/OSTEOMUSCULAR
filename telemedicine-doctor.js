@@ -317,6 +317,11 @@ class TelemedicineDoctor {
             this.sessionCodeContainer.classList.remove('hidden');
             this.updateConnectionStatus('🟡 Sesión creada - Esperando paciente', 'waiting');
 
+            // Mostrar área de video con mensaje de espera
+            this.patientVideoContainer.classList.remove('hidden');
+            this.noPatientMessage.innerHTML = '<h3>👤 Esperando conexión del paciente</h3>';
+            this.noPatientMessage.style.display = 'flex';
+
             // Habilitar algunos controles
             this.createSessionBtn.disabled = true;
         });
@@ -412,10 +417,16 @@ class TelemedicineDoctor {
                 console.log('📹 Stream recibido:', event.streams[0]);
                 this.remoteVideo.srcObject = event.streams[0];
 
-                // Ocultar placeholder y mostrar info
+                // Mostrar video y ocultar placeholder
                 if (this.videoPlaceholder) {
                     this.videoPlaceholder.style.display = 'none';
+                    this.videoPlaceholder.style.visibility = 'hidden';
                 }
+
+                // Asegurar que el video sea visible
+                this.remoteVideo.style.display = 'block';
+                this.remoteVideo.style.visibility = 'visible';
+                this.remoteVideo.style.opacity = '1';
 
                 // Actualizar info del video
                 this.remoteVideo.onloadedmetadata = () => {
@@ -424,6 +435,11 @@ class TelemedicineDoctor {
                     this.videoInfo.textContent = `Resolución: ${width}x${height} | En vivo`;
                     console.log('✅ Video del paciente mostrándose:', width, 'x', height);
                 };
+
+                // Play automático si está pausado
+                this.remoteVideo.play().catch(err => {
+                    console.log('⚠️ Autoplay bloqueado, requiere interacción del usuario:', err);
+                });
             };
 
             // Manejar ICE candidates
@@ -1039,8 +1055,14 @@ class TelemedicineDoctor {
     clearCanvas() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.patientVideoContainer.classList.add('hidden');
-        this.noPatientMessage.innerHTML = '<h3>👤 Esperando conexión del paciente</h3>';
-        this.noPatientMessage.style.display = 'flex';
+
+        // Solo mostrar mensaje si hay sesión activa
+        if (this.isSessionActive) {
+            this.noPatientMessage.innerHTML = '<h3>👤 Esperando conexión del paciente</h3>';
+            this.noPatientMessage.style.display = 'flex';
+        } else {
+            this.noPatientMessage.style.display = 'none';
+        }
     }
 
     endSession() {
