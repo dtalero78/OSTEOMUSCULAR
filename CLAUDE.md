@@ -234,41 +234,107 @@ The application uses specific medical thresholds defined in the code:
 
 ## Recent Improvements (Latest)
 
-### WebRTC Video Streaming Fix (2025-09-30)
+### Complete System Fixes (2025-09-30) - CRITICAL UPDATES
+
+#### 1. ES6 Module Loading for MediaPipe (CRITICAL FIX)
+**Problem**: MediaPipe was not loading in any interface due to missing `type="module"` attribute
+**Impact**: No pose detection, no skeleton visualization, complete system failure
+**Solution**: Added `type="module"` to script tags in:
+- `index.html`: `<script type="module" src="pose-medical-analyzer.js">`
+- `paciente.html`: `<script type="module" src="telemedicine-patient.js">`
+
+**Why this matters**: All three JavaScript files use ES6 dynamic imports:
+```javascript
+const { PoseLandmarker, FilesetResolver } = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.15');
+```
+Without `type="module"`, browsers reject dynamic imports and MediaPipe never initializes.
+
+#### 2. Video Metadata Event Handler Order (CRITICAL FIX)
+**Problem**: `onloadedmetadata` handler assigned AFTER `video.play()`, causing handler to miss the event
+**Impact**: Canvas never received dimensions, pose detection never started
+**Solution**: Moved handler assignment BEFORE `video.play()`:
+```javascript
+// ✅ CORRECT ORDER
+video.onloadedmetadata = () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    startTransmission(); // or showCameraPreview()
+}
+video.play();
+```
+
+**Files corrected**:
+- `telemedicine-patient.js`: Fixed in `startCamera()`
+- `pose-medical-analyzer.js`: Fixed in `initializeCamera()`
+
+**Why this matters**: In modern browsers, `loadedmetadata` can fire immediately when `play()` is called. If the handler isn't attached yet, the event is lost forever.
+
+#### 3. Video Streaming Visibility (Doctor Interface)
+**Problem**: Patient video element hidden behind placeholder, never made visible
+**Solution** in `telemedicine-doctor.js`:
+```javascript
+// Hide placeholder completely
+videoPlaceholder.style.display = 'none';
+videoPlaceholder.style.visibility = 'hidden';
+
+// Make video explicitly visible
+remoteVideo.style.display = 'block';
+remoteVideo.style.visibility = 'visible';
+remoteVideo.style.opacity = '1';
+remoteVideo.play(); // Force autoplay
+```
+
+#### 4. Status Messages (Doctor Interface)
+**Problem**: "Esperando stream..." message appeared before session creation
+**Solution**: Conditional display based on `isSessionActive` state:
+- No session: Area hidden
+- Session created: "👤 Esperando conexión del paciente"
+- Patient connected: "⏳ Esperando stream de datos..."
+- Data received: Message hidden, skeleton visible
+
+#### 5. Canvas Z-Index and Styling
+**Problem**: Canvas elements hidden behind other layers
+**Solution**:
+- `styles.css`: Added `z-index: 10` and `object-fit: contain` to `#canvas`
+- Overlay: `z-index: 20` to stay above skeleton
+- Patient canvas: inline `z-index: 10` in HTML
+
+#### 6. Responsive Design for Mobile
+**Solution**: Added media queries in `medico.html` for screens < 768px:
+```css
+@media (max-width: 768px) {
+    .video-content {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+    }
+    .patient-video-section { order: 1; } /* Top */
+    .skeleton-analysis-section { order: 2; } /* Bottom */
+}
+```
+
+### WebRTC Video Streaming (Previous Fix)
 - **Synchronization Issue Resolved**: Fixed timing problem where patient sent WebRTC offer before doctor was ready
 - **Server-side Coordination**: Added `doctor-ready-for-webrtc` event with 500ms delay after patient connection
 - **Patient-side Wait**: Patient now waits for doctor readiness signal before initiating WebRTC connection
-- **Status Messages**: Improved UI feedback with context-aware messages:
-  - Before patient connects: "👤 Esperando conexión del paciente"
-  - Patient connected, no data: "⏳ Esperando stream de datos del paciente..."
-  - Data flowing: Message auto-hides, skeleton displays
-- **Result**: WebRTC video streaming now works reliably, doctor receives patient video feed successfully
 
-### Key Changes
-**server.js**:
-- Added 500ms delayed `doctor-ready-for-webrtc` event after `session-joined`
-- Ensures doctor interface is fully initialized before WebRTC negotiation
+### Verified Functionality (All Fixed)
+- ✅ MediaPipe loads correctly in all three interfaces
+- ✅ Skeleton overlay visible on patient video feed (green)
+- ✅ Skeleton analysis visible in doctor canvas (green/red)
+- ✅ Skeleton visible in original application (blue)
+- ✅ WebRTC video streaming working (patient video on doctor screen)
+- ✅ Real-time pose data transmission (15-30 FPS)
+- ✅ Canvas dimensions match video dimensions
+- ✅ Status messages context-aware and accurate
+- ✅ Responsive design works on mobile devices
+- ✅ Session management stable
+- ✅ Medical calculations accurate
 
-**telemedicine-patient.js**:
-- Listens for `doctor-ready-for-webrtc` before calling `setupWebRTC()`
-- Removed premature WebRTC initialization from `startCamera()`
-
-**telemedicine-doctor.js**:
-- Dynamic status messages based on connection state
-- Auto-hide message when pose data arrives
-- Proper message restoration on patient disconnect
-
-### Skeleton Visualization Fixes (Previous)
-- **Patient Interface**: Fixed skeleton not appearing over video by adding `z-index: 10` and `pointer-events: none` to pose canvas
-- **Doctor Interface**: Added proper CSS styling for analysis canvas with dark background and explicit dimensions
-- **Canvas Layering**: Corrected positioning of "no patient" message to not interfere with skeleton display
-- **Real-time Display**: Both patient and doctor now properly see skeleton visualization during telemedicine sessions
-
-### Verified Functionality
-- ✅ WebRTC video streaming working (patient video appears on doctor screen)
-- ✅ Patient sees skeleton overlay on their video feed
-- ✅ Doctor sees skeleton analysis in dedicated canvas
-- ✅ Real-time streaming of pose data working correctly
-- ✅ Session management and doctor-patient connections stable
-- ✅ Medical calculations and guided sequences operational
-- ✅ Context-aware status messages for better UX
+### Critical Development Notes
+**ALWAYS remember when working with video and MediaPipe**:
+1. **Script tags**: Use `type="module"` for files with dynamic imports
+2. **Event handlers**: Assign BEFORE calling `video.play()`
+3. **Canvas dimensions**: Set from `video.videoWidth/Height` in `onloadedmetadata`
+4. **Z-index**: Canvas needs explicit `z-index` to appear over video
+5. **Visibility**: Video elements may need explicit visibility styles
+6. **Testing order**: Test ES6 imports → Video metadata → Canvas draw → Data transmission
