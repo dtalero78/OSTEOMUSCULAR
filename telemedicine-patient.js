@@ -329,12 +329,23 @@ class TelemedicinePatient {
                 this.calculateMedicalMetrics(landmarks);
 
                 // Enviar datos al médico
-                this.socket.emit('pose-data', {
+                const dataToSend = {
                     sessionCode: this.sessionCode,
                     landmarks: landmarks,
                     metrics: this.currentMetrics,
                     timestamp: Date.now()
-                });
+                };
+
+                this.socket.emit('pose-data', dataToSend);
+
+                // Log cada 30 frames para no saturar consola
+                if (this.transmissionStats.frameCount % 30 === 0) {
+                    console.log('📤 Enviando datos:', {
+                        sessionCode: this.sessionCode,
+                        landmarksCount: landmarks.length,
+                        frame: this.transmissionStats.frameCount
+                    });
+                }
 
                 // Actualizar estadísticas
                 this.transmissionStats.frameCount++;

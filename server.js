@@ -122,7 +122,7 @@ io.on('connection', (socket) => {
     });
 
     // Transmitir datos de pose del paciente al médico
-    socket.on('pose-data', ({ sessionCode, landmarks, metrics, videoFrame }) => {
+    socket.on('pose-data', ({ sessionCode, landmarks, metrics, timestamp }) => {
         const session = activeSessions.get(sessionCode);
 
         if (session && session.patientId === socket.id && session.isActive) {
@@ -130,9 +130,13 @@ io.on('connection', (socket) => {
             io.to(session.doctorId).emit('receive-pose-data', {
                 landmarks,
                 metrics,
-                videoFrame,
-                timestamp: Date.now()
+                timestamp: timestamp || Date.now()
             });
+
+            // Log para debugging
+            console.log(`📡 Datos transmitidos - Landmarks: ${landmarks?.length || 0}, Sesión: ${sessionCode}`);
+        } else {
+            console.log(`⚠️ Datos rechazados - Sesión inválida o inactiva: ${sessionCode}`);
         }
     });
 

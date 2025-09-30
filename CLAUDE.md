@@ -63,11 +63,13 @@ npx http-server -p 8000
 - **Real-time Streaming**: Patient pose data streamed live to doctor at 15-30 FPS
 - **Session Management**: Unique 6-character codes connect patient-doctor pairs
 - **Remote Control**: Doctor can send instructions and commands to patient
-- **Live Visualization**: Doctor sees patient's skeleton overlay in real-time
+- **Live Visualization**: Doctor sees patient's skeleton overlay in real-time with proper z-index layering
+- **Patient Skeleton Display**: Patient sees their own pose analysis overlay on video feed
 - **Instant Metrics**: Medical calculations updated continuously during examination
 - **Digital Capture**: Doctor can capture key moments for detailed analysis
 - **Medical Reports**: Automated generation of comprehensive examination reports
 - **Audio Guidance**: Patients receive spoken instructions during examination
+- **Guided Medical Sequences**: Step-by-step examination protocols for different assessment types
 
 ### Examination Types
 - **Postural Evaluation**: Cervical alignment, pelvic tilt, lateral deviation
@@ -171,16 +173,22 @@ The application uses specific medical thresholds defined in the code:
 #### TelemedicineDoctor Class (`telemedicine-doctor.js`)
 - `createSession()`: Generates unique session code for patient connection
 - `handlePoseData()`: Processes real-time pose data from patient
-- `drawPoseOnCanvas()`: Visualizes patient's skeleton on doctor's screen
+- `drawPoseOnCanvas()`: Visualizes patient's skeleton on doctor's screen with proper canvas styling
+- `setupCanvas()`: Configures 600x400px canvas with dark background for optimal skeleton visibility
 - `sendCommand()`: Sends instructions/commands to patient
+- `startGuidedSequence()`: Initiates medical examination sequences (posture, ranges, symmetry, complete)
 - `captureSnapshot()`: Captures moment for detailed analysis
-- `generateReport()`: Creates comprehensive medical report
+- `generateReport()`: Creates comprehensive medical report with recommendations
+- `generateRecommendations()`: Advanced medical recommendations based on clinical thresholds
 
 #### TelemedicinePatient Class (`telemedicine-patient.js`)
 - `connectToDoctor()`: Establishes connection using session code
 - `transmitPoseData()`: Streams pose data to doctor in real-time
+- `drawPoseLandmarks()`: Displays skeleton overlay on patient's video with z-index: 10
 - `handleDoctorCommand()`: Processes commands received from doctor
-- `calculateMedicalMetrics()`: Computes medical measurements locally
+- `calculateMedicalMetrics()`: Computes medical measurements locally using original algorithms
+- `startGuidedSequence()`: Processes guided examination instructions with audio feedback
+- `speak()`: Text-to-speech for patient instructions in Spanish
 
 #### MedicalPoseAnalyzer Class (`pose-medical-analyzer.js`) - Legacy
 - `initializeCamera()`: Auto-activates camera on page load
@@ -206,6 +214,9 @@ The application uses specific medical thresholds defined in the code:
 - **User Privacy**: No persistent storage of patient data
 - **Session Security**: Validate session codes and prevent unauthorized access
 - **Cross-device Compatibility**: Support various devices for both patients and doctors
+- **Visual Reliability**: Proper z-index layering ensures skeleton visualization on both interfaces
+- **Canvas Optimization**: 600x400px doctor canvas with dark background for medical analysis
+- **UI Responsiveness**: Patient skeleton overlay with pointer-events: none for non-interference
 
 ### User Experience Principles
 - **Immediate Connection**: Fast session establishment
@@ -220,3 +231,48 @@ The application uses specific medical thresholds defined in the code:
 - WebSocket support for real-time communication
 - Canvas and modern JavaScript features required
 - Microphone access for audio instructions (optional)
+
+## Recent Improvements (Latest)
+
+### Skeleton Visualization Fixes
+- **Patient Interface**: Fixed skeleton not appearing over video by adding `z-index: 10` and `pointer-events: none` to pose canvas
+- **Doctor Interface**: Added proper CSS styling for analysis canvas with dark background and explicit dimensions
+- **Canvas Layering**: Corrected positioning of "no patient" message to not interfere with skeleton display
+- **Real-time Display**: Both patient and doctor now properly see skeleton visualization during telemedicine sessions
+
+### CSS Fixes Applied
+```css
+/* Patient Canvas - Shows skeleton over video */
+#poseCanvas {
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* Doctor Canvas - Medical analysis display */
+#patientCanvas {
+    width: 100%;
+    height: 100%;
+    max-width: 600px;
+    max-height: 400px;
+    border: 1px solid #333;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 10;
+    position: relative;
+}
+
+/* Proper message positioning */
+.no-patient-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+}
+```
+
+### Verified Functionality
+- ✅ Patient sees skeleton overlay on their video feed
+- ✅ Doctor sees skeleton analysis in dedicated canvas
+- ✅ Real-time streaming of pose data working correctly
+- ✅ Session management and doctor-patient connections stable
+- ✅ Medical calculations and guided sequences operational

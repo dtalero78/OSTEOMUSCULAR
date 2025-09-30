@@ -326,6 +326,11 @@ class TelemedicineDoctor {
 
         // Datos de pose recibidos
         this.socket.on('receive-pose-data', ({ landmarks, metrics, timestamp }) => {
+            console.log('📥 Datos de pose recibidos:', {
+                landmarksCount: landmarks?.length || 0,
+                hasMetrics: !!metrics,
+                timestamp: timestamp
+            });
             this.handlePoseData(landmarks, metrics, timestamp);
         });
 
