@@ -47,6 +47,15 @@ class TelemedicinePatient {
         this.audioEnabled = true;
         this.speechSynthesis = window.speechSynthesis;
 
+        // WebRTC configuration
+        this.peerConnection = null;
+        this.iceServers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
         this.initializeInterface();
     }
 
@@ -178,14 +187,19 @@ class TelemedicinePatient {
         });
 
         // WebRTC signaling
-        this.socket.on('webrtc-answer', ({ answer }) => {
+        this.socket.on('webrtc-answer', async ({ answer }) => {
             console.log('📹 Respuesta WebRTC recibida');
-            // Implementar WebRTC aquí si es necesario
+            if (this.peerConnection) {
+                await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                console.log('✅ Remote description establecida');
+            }
         });
 
-        this.socket.on('webrtc-ice-candidate', ({ candidate }) => {
+        this.socket.on('webrtc-ice-candidate', async ({ candidate }) => {
             console.log('🧊 ICE candidate recibido');
-            // Implementar WebRTC aquí si es necesario
+            if (this.peerConnection && candidate) {
+                await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            }
         });
 
         // Snapshot capturado
@@ -277,16 +291,68 @@ class TelemedicinePatient {
             this.video.srcObject = stream;
             await this.video.play();
 
-            this.video.onloadedmetadata = () => {
+            this.video.onloadedmetadata = async () => {
                 this.canvas.width = this.video.videoWidth;
                 this.canvas.height = this.video.videoHeight;
                 console.log('📹 Cámara iniciada:', this.video.videoWidth, 'x', this.video.videoHeight);
+
+                // Iniciar WebRTC para transmitir video al médico
+                await this.setupWebRTC(stream);
+
                 this.startTransmission();
             };
 
         } catch (error) {
             console.error('❌ Error accediendo a la cámara:', error);
             this.updateConnectionStatus('❌ Error: No se puede acceder a la cámara', 'error');
+        }
+    }
+
+    async setupWebRTC(stream) {
+        try {
+            console.log('🔗 Configurando WebRTC...');
+
+            // Crear peer connection
+            this.peerConnection = new RTCPeerConnection(this.iceServers);
+
+            // Agregar tracks del stream al peer connection
+            stream.getTracks().forEach(track => {
+                this.peerConnection.addTrack(track, stream);
+                console.log('📹 Track agregado:', track.kind);
+            });
+
+            // Manejar ICE candidates
+            this.peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('🧊 Enviando ICE candidate');
+                    this.socket.emit('webrtc-ice-candidate', {
+                        sessionCode: this.sessionCode,
+                        candidate: event.candidate
+                    });
+                }
+            };
+
+            // Manejar estado de conexión
+            this.peerConnection.onconnectionstatechange = () => {
+                console.log('🔗 Estado WebRTC:', this.peerConnection.connectionState);
+                if (this.peerConnection.connectionState === 'connected') {
+                    console.log('✅ Video streaming conectado');
+                }
+            };
+
+            // Crear offer
+            const offer = await this.peerConnection.createOffer();
+            await this.peerConnection.setLocalDescription(offer);
+
+            // Enviar offer al médico
+            console.log('📤 Enviando WebRTC offer al médico');
+            this.socket.emit('webrtc-offer', {
+                sessionCode: this.sessionCode,
+                offer: offer
+            });
+
+        } catch (error) {
+            console.error('❌ Error configurando WebRTC:', error);
         }
     }
 

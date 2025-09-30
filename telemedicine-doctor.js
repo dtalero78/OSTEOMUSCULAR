@@ -165,6 +165,16 @@ class TelemedicineDoctor {
         // Landmarks recibidos
         this.receivedLandmarks = null;
 
+        // WebRTC configuration
+        this.peerConnection = null;
+        this.remoteVideo = null;
+        this.iceServers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+
         this.initializeInterface();
     }
 
@@ -208,6 +218,9 @@ class TelemedicineDoctor {
 
         // Elementos de video
         this.patientVideoContainer = document.getElementById('patientVideoContainer');
+        this.remoteVideo = document.getElementById('remoteVideo');
+        this.videoPlaceholder = document.getElementById('videoPlaceholder');
+        this.videoInfo = document.getElementById('videoInfo');
         this.canvas = document.getElementById('patientCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.noPatientMessage = document.getElementById('noPatientMessage');
@@ -352,12 +365,96 @@ class TelemedicineDoctor {
             console.log('📸 Confirmación de snapshot');
         });
 
+        // WebRTC signaling - Offer del paciente
+        this.socket.on('webrtc-offer', async ({ offer }) => {
+            console.log('📹 WebRTC Offer recibido del paciente');
+            await this.handleWebRTCOffer(offer);
+        });
+
+        // WebRTC ICE candidates
+        this.socket.on('webrtc-ice-candidate', async ({ candidate }) => {
+            console.log('🧊 ICE candidate recibido');
+            if (this.peerConnection && candidate) {
+                await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+        });
+
         // Desconexión
         this.socket.on('disconnect', () => {
             console.log('🔌 Desconectado del servidor');
             this.updateConnectionStatus('🔴 Desconectado del servidor', 'error');
             this.resetSession();
         });
+    }
+
+    async handleWebRTCOffer(offer) {
+        try {
+            console.log('🔗 Configurando WebRTC en lado del médico...');
+
+            // Crear peer connection
+            this.peerConnection = new RTCPeerConnection(this.iceServers);
+
+            // Manejar tracks entrantes (video del paciente)
+            this.peerConnection.ontrack = (event) => {
+                console.log('📹 Stream recibido:', event.streams[0]);
+                this.remoteVideo.srcObject = event.streams[0];
+
+                // Ocultar placeholder y mostrar info
+                if (this.videoPlaceholder) {
+                    this.videoPlaceholder.style.display = 'none';
+                }
+
+                // Actualizar info del video
+                this.remoteVideo.onloadedmetadata = () => {
+                    const width = this.remoteVideo.videoWidth;
+                    const height = this.remoteVideo.videoHeight;
+                    this.videoInfo.textContent = `Resolución: ${width}x${height} | En vivo`;
+                    console.log('✅ Video del paciente mostrándose:', width, 'x', height);
+                };
+            };
+
+            // Manejar ICE candidates
+            this.peerConnection.onicecandidate = (event) => {
+                if (event.candidate) {
+                    console.log('🧊 Enviando ICE candidate al paciente');
+                    this.socket.emit('webrtc-ice-candidate', {
+                        sessionCode: this.sessionCode,
+                        candidate: event.candidate
+                    });
+                }
+            };
+
+            // Manejar estado de conexión
+            this.peerConnection.onconnectionstatechange = () => {
+                console.log('🔗 Estado WebRTC:', this.peerConnection.connectionState);
+                if (this.peerConnection.connectionState === 'connected') {
+                    console.log('✅ Video streaming conectado');
+                } else if (this.peerConnection.connectionState === 'failed') {
+                    console.error('❌ Conexión WebRTC falló');
+                    if (this.videoPlaceholder) {
+                        this.videoPlaceholder.innerHTML = '<div style="text-align: center; color: #f44336;">❌ Error de conexión<br><small>Intentando reconectar...</small></div>';
+                        this.videoPlaceholder.style.display = 'flex';
+                    }
+                }
+            };
+
+            // Establecer remote description (offer del paciente)
+            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+            // Crear answer
+            const answer = await this.peerConnection.createAnswer();
+            await this.peerConnection.setLocalDescription(answer);
+
+            // Enviar answer al paciente
+            console.log('📤 Enviando WebRTC answer al paciente');
+            this.socket.emit('webrtc-answer', {
+                sessionCode: this.sessionCode,
+                answer: answer
+            });
+
+        } catch (error) {
+            console.error('❌ Error configurando WebRTC:', error);
+        }
     }
 
     createSession() {
