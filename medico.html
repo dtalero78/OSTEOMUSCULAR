@@ -305,6 +305,47 @@
             border-radius: 5px;
             resize: vertical;
         }
+
+        /* Responsive design para móvil */
+        @media (max-width: 768px) {
+            .doctor-interface {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                height: auto;
+                padding: 10px;
+            }
+
+            .video-panel {
+                min-height: auto;
+            }
+
+            .video-content {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+                gap: 10px;
+            }
+
+            .patient-video-section {
+                order: 1;
+            }
+
+            .skeleton-analysis-section {
+                order: 2;
+                min-height: 400px;
+            }
+
+            .patient-video-container {
+                height: 300px;
+            }
+
+            .doctor-panel {
+                padding: 15px;
+            }
+
+            .metrics-panel {
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 <body>

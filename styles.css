@@ -172,6 +172,7 @@ header p {
     height: 100%;
     pointer-events: none;
     z-index: 10;
+    object-fit: contain;
 }
 
 .overlay {
