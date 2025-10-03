@@ -553,14 +553,100 @@ remoteVideo.play(); // Force autoplay
 - ✅ Session management stable
 - ✅ Medical calculations accurate
 
+### Dual-Screen Patient Interface (2025-10-03) - UX IMPROVEMENT
+
+**Problem**: Patient interface combined login and exam in one screen, causing confusion
+**Solution**: Separated into two distinct screens with automatic transition
+
+#### Changes Implemented:
+
+**1. Login Screen** (`paciente.html`)
+- Centered card design with gradient background
+- Form fields: Patient name, age (optional), session code
+- Session code input: uppercase, letter-spacing, centered styling
+- Connection button with disabled states
+- Status indicator with semantic colors (connecting, connected, error)
+- BSL logo placeholder with graceful fallback
+
+**2. Exam Screen** (`paciente.html`)
+- Full interface appears only after successful connection
+- Header with patient info and connection status badge
+- Disconnect button returns to login screen (with confirmation)
+- Grid layout: video feed + skeleton analysis side-by-side
+- Instructions panel for doctor commands
+- Stats panel with real-time metrics
+- Guided instructions overlay for medical sequences
+
+**3. Screen Management** (`telemedicine-patient.js`)
+
+New Methods:
+```javascript
+showExamScreen() {
+    this.loginScreen.style.display = 'none';
+    this.examScreen.style.display = 'block';
+}
+
+showLoginScreen() {
+    this.examScreen.style.display = 'none';
+    this.loginScreen.style.display = 'flex';
+}
+
+disconnect() {
+    // Confirms, stops camera, closes peer connection
+    // Disconnects socket, returns to login, resets form
+}
+```
+
+Updated Event Handlers:
+- `loginForm.submit`: Calls `connectToDoctor()`
+- `disconnectBtn.click`: Calls `disconnect()` with confirmation
+- `session-joined`: Triggers `showExamScreen()` + camera initialization
+
+**4. Removed Obsolete Features**
+- ❌ `testCamera()` function and button
+- ❌ `toggleAudio()` function and button
+- ❌ `emergencyStop()` function and button
+- ❌ Inline instructions display (now in dedicated panel)
+
+**5. Critical Fix**
+- Added `<script src="/socket.io/socket.io.js">` before module script
+- Resolves "io is not defined" error
+
+#### Design System Applied:
+- Figtree font throughout
+- Dark theme: `#1c1e21` background, `#242527` cards
+- Border radius: 16px login card, 12px exam cards, 8px inputs
+- Semantic colors: Blue (#5b8def) connect, Red (#e85d55) disconnect, Green (#5ebd6d) connected
+- Responsive: @media 768px breakpoint for mobile
+
+#### User Flow:
+1. **Patient opens interface** → sees login screen
+2. **Enters name, age, session code** → clicks "Conectar"
+3. **Connection established** → automatic transition to exam screen
+4. **Exam in progress** → full interface with video, analysis, instructions
+5. **Clicks "Desconectar"** → confirmation → returns to login screen
+
+**Files Modified**:
+- `paciente.html`: Complete dual-screen UI redesign
+- `telemedicine-patient.js`: Screen management methods, updated DOM references
+- `CLAUDE.md`: This documentation (commit 10b9e1a)
+
+**Benefits**:
+- ✅ Clear separation of concerns (auth vs. exam)
+- ✅ Less visual clutter during connection
+- ✅ Professional onboarding experience
+- ✅ Easy to disconnect and reconnect with different code
+- ✅ Consistent with modern telemedicine UX patterns
+
 ### Critical Development Notes
 **ALWAYS remember when working with video and MediaPipe**:
 1. **Script tags**: Use `type="module"` for files with dynamic imports
-2. **Event handlers**: Assign BEFORE calling `video.play()`
-3. **Canvas dimensions**: Set from `video.videoWidth/Height` in `onloadedmetadata`
-4. **Z-index**: Canvas needs explicit `z-index` to appear over video
-5. **Visibility**: Video elements may need explicit visibility styles
-6. **Testing order**: Test ES6 imports → Video metadata → Canvas draw → Data transmission
+2. **Socket.io**: Load client library BEFORE module scripts (`<script src="/socket.io/socket.io.js">`)
+3. **Event handlers**: Assign BEFORE calling `video.play()`
+4. **Canvas dimensions**: Set from `video.videoWidth/Height` in `onloadedmetadata`
+5. **Z-index**: Canvas needs explicit `z-index` to appear over video
+6. **Visibility**: Video elements may need explicit visibility styles
+7. **Testing order**: Test ES6 imports → Video metadata → Canvas draw → Data transmission
 
 **Design System Consistency**:
 1. **Always use Figtree font**: Add Google Fonts link in `<head>` for new HTML files
