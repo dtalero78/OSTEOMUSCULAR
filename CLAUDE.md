@@ -21,6 +21,7 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 - **Communication**: WebSocket connections for real-time data streaming
 - **MediaPipe Pose Landmarker**: Real-time pose detection (loaded via CDN from jsdelivr.net)
 - **Web APIs**: Camera access via getUserMedia, Canvas for visualization
+- **Design System**: Modern dark UI with Figtree font (Google Fonts), Whereby-inspired interface
 - **Medical Focus**: Specialized for clinical postural and joint analysis with telemedicine capabilities
 
 ## Development Commands
@@ -197,15 +198,60 @@ The application uses specific medical thresholds defined in the code:
 - `startExamWithCountdown()`: Initiates examination with delay
 - `showCountdown()`: 5-second countdown animation
 
+## Design System
+
+### UI/UX Design Philosophy
+The application follows a **modern, professional dark theme** inspired by Whereby's clean interface design.
+
+#### Color Palette
+- **Background**: `#1c1e21` (main dark background)
+- **Cards/Panels**: `#242527` (elevated surfaces)
+- **Borders**: `#3a3b3c` (subtle separation)
+- **Text Primary**: `#e4e6eb` (high contrast)
+- **Text Secondary**: `#b0b3b8` (muted labels)
+- **Accent Blue**: `#5b8def` (primary actions, links)
+- **Success Green**: `#5ebd6d` (positive states)
+- **Warning Yellow**: `#f7b928` (alerts, caution)
+- **Error Red**: `#e85d55` (errors, critical)
+
+#### Typography
+- **Font Family**: Figtree (Google Fonts) - modern, professional, highly legible
+- **Font Weights**: 300 (light), 400 (regular), 500 (medium), 600 (semibold), 700 (bold)
+- **Base Size**: 14px for body text, 13px for labels, 18px for headings
+
+#### Component Styling
+- **Border Radius**: 12px for cards, 8px for inputs/buttons
+- **Spacing**: 16px standard padding, 12px for compact elements
+- **Transitions**: 0.2s ease for hover states
+- **Shadows**: Minimal, using borders instead for depth
+
+#### Doctor Interface Layout
+- **Grid Layout**: 3-column (300px sidebar | 1fr video | 340px metrics)
+- **Video Display**: Full-screen skeleton analysis with PiP patient video (240x135px) in bottom-left corner
+- **Patient Video**: Picture-in-Picture style, dark border, subtle shadow
+
+#### Patient Interface Layout
+- **Split View**: 2-column grid for video feed and skeleton analysis side-by-side
+- **Section Headers**: Colored titles (green for video, yellow for skeleton)
+- **Connection Panel**: Centered, prominent session code input
+
+### Design Principles
+- **Dark First**: All interfaces use dark theme for reduced eye strain during long sessions
+- **Minimal Gradients**: Flat colors for modern, professional appearance
+- **Semantic Colors**: Green = success/active, Yellow = warning/attention, Red = error/critical, Blue = primary actions
+- **Clear Hierarchy**: Typography weight and size create visual importance
+- **Consistent Spacing**: 8px/12px/16px/24px rhythm throughout
+
 ## Development Guidelines
 
 ### Medical Application Context
 - This is a **telemedicine diagnostic support tool**
 - All changes must consider clinical accuracy and patient safety
-- UI changes should maintain medical professional standards
+- UI changes should maintain medical professional standards and dark theme consistency
 - Code modifications should preserve medical calculation precision
 - New features should enhance remote consultation workflow
 - Telemedicine features must ensure reliable doctor-patient communication
+- **Design updates must maintain Figtree font and Whereby-inspired dark aesthetic**
 
 ### Telemedicine Development Principles
 - **Real-time Performance**: Maintain <200ms latency for live streaming
@@ -233,6 +279,43 @@ The application uses specific medical thresholds defined in the code:
 - Microphone access for audio instructions (optional)
 
 ## Recent Improvements (Latest)
+
+### Modern UI Design Update (2025-10-03) - DESIGN OVERHAUL
+
+**Complete visual redesign** of both doctor and patient interfaces with modern dark theme inspired by Whereby.
+
+#### Changes Implemented:
+1. **Typography**: Integrated Figtree font from Google Fonts across all interfaces
+2. **Color System**: Implemented professional dark theme with semantic color palette
+3. **Doctor Interface**:
+   - 3-column grid layout (300px | 1fr | 340px)
+   - Full-screen skeleton analysis canvas
+   - Picture-in-Picture patient video (240x135px) in bottom-left corner
+   - Dark panels (`#242527`) with subtle borders (`#3a3b3c`)
+4. **Patient Interface**:
+   - Split-view layout for video and skeleton side-by-side
+   - Colored section headers (green for video, yellow for skeleton)
+   - Modern connection panel with prominent session code input
+5. **Component Updates**:
+   - All buttons use flat design with semantic colors
+   - Inputs/selects with dark backgrounds and blue focus states
+   - Cards with 12px border radius, inputs with 8px
+   - Consistent 16px padding throughout
+6. **Status Indicators**: Color-coded backgrounds for connection states
+7. **Base Styles**: Updated `styles.css` for consistency across original app
+
+#### Files Modified:
+- `medico.html`: Complete inline style overhaul
+- `paciente.html`: Complete inline style overhaul
+- `styles.css`: Base styles updated to dark theme
+- `CLAUDE.md`: Added Design System section
+
+#### Design Tokens:
+- Background: `#1c1e21`
+- Cards: `#242527`
+- Borders: `#3a3b3c`
+- Text: `#e4e6eb` (primary), `#b0b3b8` (secondary)
+- Accent: `#5b8def` (blue), `#5ebd6d` (green), `#f7b928` (yellow), `#e85d55` (red)
 
 ### Complete System Fixes (2025-09-30) - CRITICAL UPDATES
 
@@ -338,3 +421,12 @@ remoteVideo.play(); // Force autoplay
 4. **Z-index**: Canvas needs explicit `z-index` to appear over video
 5. **Visibility**: Video elements may need explicit visibility styles
 6. **Testing order**: Test ES6 imports → Video metadata → Canvas draw → Data transmission
+
+**Design System Consistency**:
+1. **Always use Figtree font**: Add Google Fonts link in `<head>` for new HTML files
+2. **Maintain dark theme**: Use color palette defined in Design System section
+3. **Border radius**: 12px for cards/panels, 8px for buttons/inputs
+4. **Component spacing**: Follow 8px/12px/16px/24px rhythm
+5. **Button states**: Include hover effects with `:hover:not(:disabled)` selector
+6. **Input focus**: Always style `:focus` state with blue accent (`#5b8def`)
+7. **Semantic colors**: Green for success, Yellow for warnings, Red for errors, Blue for primary actions

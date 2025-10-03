@@ -5,76 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Médico - Examen Osteomuscular Virtual</title>
     <script src="/socket.io/socket.io.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
+        body {
+            font-family: 'Figtree', sans-serif;
+            background: #1c1e21;
+            margin: 0;
+            padding: 0;
+            color: #e4e6eb;
+        }
+
         .doctor-interface {
             display: grid;
-            grid-template-columns: 280px 1fr 320px;
-            gap: 20px;
+            grid-template-columns: 300px 1fr 340px;
+            gap: 16px;
             height: 100vh;
-            padding: 20px;
+            padding: 16px;
             max-width: none;
         }
 
         .doctor-panel {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
+            background: #242527;
+            border-radius: 12px;
+            padding: 24px;
             overflow-y: auto;
+            border: 1px solid #3a3b3c;
+        }
+
+        .doctor-panel h3 {
+            color: #e4e6eb;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 20px 0;
         }
 
         .session-panel {
-            background: #e3f2fd;
+            background: #242527;
         }
 
         .video-panel {
-            background: #1a1a1a;
-            border-radius: 10px;
-            display: grid;
-            grid-template-rows: auto 1fr;
-            gap: 10px;
-            padding: 15px;
+            background: #000000;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
             min-height: 500px;
+            border: 1px solid #3a3b3c;
+            position: relative;
         }
 
         .video-header {
-            color: white;
-            text-align: center;
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 10px;
+            display: none;
         }
 
         .video-content {
-            display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 15px;
+            display: flex;
+            flex-direction: column;
             height: 100%;
+            width: 100%;
+            position: relative;
         }
 
         .patient-video-section {
-            background: #2d2d2d;
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 240px;
+            height: 135px;
+            background: #1c1e21;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #3a3b3c;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
         }
 
         .patient-video-title {
-            color: #4caf50;
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            text-align: center;
+            display: none;
         }
 
         .patient-video-container {
             position: relative;
             width: 100%;
-            height: 200px;
-            border-radius: 6px;
-            overflow: hidden;
+            height: 100%;
             background: #000;
         }
 
@@ -82,31 +98,23 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 6px;
         }
 
         .video-info {
-            color: #ccc;
-            font-size: 10px;
-            margin-top: 5px;
-            text-align: center;
+            display: none;
         }
 
         .skeleton-analysis-section {
-            background: #2d2d2d;
-            border-radius: 8px;
-            padding: 10px;
+            width: 100%;
+            height: 100%;
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             position: relative;
         }
 
         .skeleton-title {
-            color: #ff9800;
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 8px;
-            text-align: center;
+            display: none;
         }
 
         .skeleton-canvas-container {
@@ -114,11 +122,9 @@
             width: 100%;
             height: 100%;
             background: #000;
-            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 300px;
         }
 
         .pose-overlay {
@@ -142,118 +148,250 @@
         }
 
         .session-code-display {
-            font-size: 36px;
-            font-weight: bold;
+            font-size: 32px;
+            font-weight: 700;
             text-align: center;
-            color: #1976d2;
-            background: white;
+            color: #5b8def;
+            background: #1c1e21;
             padding: 20px;
-            border-radius: 10px;
-            border: 3px dashed #1976d2;
+            border-radius: 12px;
+            border: 2px solid #3a3b3c;
             margin: 20px 0;
-            letter-spacing: 5px;
+            letter-spacing: 8px;
         }
 
         .patient-info {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border-left: 4px solid #4caf50;
+            background: #1c1e21;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+            border: 1px solid #3a3b3c;
+        }
+
+        .patient-info h4 {
+            color: #e4e6eb;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .patient-info p {
+            color: #b0b3b8;
+            font-size: 13px;
+            margin: 8px 0;
+        }
+
+        .patient-info strong {
+            color: #e4e6eb;
+            font-weight: 500;
         }
 
         .connection-status {
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
-            margin: 15px 0;
-            font-weight: bold;
+            margin: 16px 0;
+            font-weight: 500;
             text-align: center;
+            font-size: 13px;
         }
 
-        .status-waiting { background: #fff3e0; color: #ef6c00; }
-        .status-connected { background: #e8f5e8; color: #2e7d32; }
-        .status-error { background: #ffebee; color: #c62828; }
+        .status-waiting {
+            background: #3a3214;
+            color: #f7b928;
+            border: 1px solid #524416;
+        }
+        .status-connected {
+            background: #1f3a24;
+            color: #5ebd6d;
+            border: 1px solid #2d5234;
+        }
+        .status-error {
+            background: #3a1f1f;
+            color: #e85d55;
+            border: 1px solid #522d2d;
+        }
 
         .metrics-panel {
-            background: #f3e5f5;
+            background: #242527;
         }
 
         .metric-group {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
-            border-left: 4px solid #9c27b0;
+            background: #1c1e21;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 12px 0;
+            border: 1px solid #3a3b3c;
+        }
+
+        .metric-group h4 {
+            color: #e4e6eb;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .metric span:first-child {
+            color: #b0b3b8;
+            font-size: 13px;
         }
 
         .metric-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #1976d2;
+            font-size: 15px;
+            font-weight: 600;
+            color: #5b8def;
         }
 
-        .metric-normal { color: #4caf50; }
-        .metric-warning { color: #ff9800; }
-        .metric-alert { color: #f44336; }
+        .metric-normal { color: #5ebd6d; }
+        .metric-warning { color: #f7b928; }
+        .metric-alert { color: #e85d55; }
 
         .doctor-controls {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            margin: 20px 0;
+            gap: 8px;
+            margin: 16px 0;
         }
 
         .control-group {
-            margin: 15px 0;
+            margin: 12px 0;
         }
 
         .control-group label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #b0b3b8;
+            font-size: 13px;
+        }
+
+        .control-group input,
+        .control-group select,
+        .instruction-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #1c1e21;
+            border: 1px solid #3a3b3c;
+            border-radius: 8px;
+            color: #e4e6eb;
+            font-size: 14px;
+            font-family: 'Figtree', sans-serif;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus,
+        .instruction-input:focus {
+            outline: none;
+            border-color: #5b8def;
         }
 
         .instruction-input {
+            margin-bottom: 8px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Figtree', sans-serif;
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: #5b8def;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #4a7de0;
+        }
+
+        .btn-secondary {
+            background: #3a3b3c;
+            color: #e4e6eb;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #4a4b4c;
+        }
+
+        .btn-accent {
+            background: #f7b928;
+            color: #1c1e21;
+        }
+
+        .btn-accent:hover:not(:disabled) {
+            background: #e6a817;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .quick-instructions {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 5px;
-            margin: 10px 0;
+            gap: 6px;
+            margin: 12px 0;
         }
 
         .quick-btn {
-            padding: 8px;
+            padding: 8px 10px;
             font-size: 12px;
-            border: none;
-            border-radius: 4px;
-            background: #e3f2fd;
-            color: #1976d2;
+            border: 1px solid #3a3b3c;
+            border-radius: 8px;
+            background: #1c1e21;
+            color: #b0b3b8;
             cursor: pointer;
+            font-family: 'Figtree', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         .quick-btn:hover {
-            background: #bbdefb;
+            background: #3a3b3c;
+            color: #e4e6eb;
         }
 
         .exam-controls {
-            background: #e8f5e8;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+            background: #1c1e21;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+            border: 1px solid #3a3b3c;
+        }
+
+        .exam-controls h4 {
+            color: #e4e6eb;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
         .capture-panel {
-            background: #fff3e0;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+            background: #1c1e21;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+            border: 1px solid #3a3b3c;
+        }
+
+        .capture-panel h4 {
+            color: #e4e6eb;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
         .snapshots-list {
@@ -262,12 +400,13 @@
         }
 
         .snapshot-item {
-            background: white;
+            background: #242527;
             padding: 10px;
-            border-radius: 5px;
-            margin: 5px 0;
-            border-left: 3px solid #ff9800;
+            border-radius: 8px;
+            margin: 6px 0;
+            border-left: 3px solid #f7b928;
             font-size: 12px;
+            color: #b0b3b8;
         }
 
         .no-patient-message {
@@ -275,35 +414,74 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: white;
+            color: #b0b3b8;
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             z-index: 5;
         }
 
+        .no-patient-message h3 {
+            color: #e4e6eb;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .no-patient-message p {
+            color: #b0b3b8;
+            font-size: 14px;
+        }
+
         .stats-panel {
-            background: #fce4ec;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 15px 0;
+            background: #1c1e21;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 16px 0;
+            border: 1px solid #3a3b3c;
+        }
+
+        .stats-panel h4 {
+            color: #e4e6eb;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
         .transmission-stats {
-            font-family: monospace;
+            font-family: 'Courier New', monospace;
             font-size: 12px;
-            background: #f5f5f5;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
+            background: #242527;
+            color: #b0b3b8;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            line-height: 1.6;
         }
 
         .doctor-notes {
             width: 100%;
             min-height: 100px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            padding: 12px;
+            background: #1c1e21;
+            border: 1px solid #3a3b3c;
+            border-radius: 8px;
             resize: vertical;
+            color: #e4e6eb;
+            font-family: 'Figtree', sans-serif;
+            font-size: 14px;
+        }
+
+        .doctor-notes:focus {
+            outline: none;
+            border-color: #5b8def;
+        }
+
+        .doctor-notes::placeholder {
+            color: #6a6b6c;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         /* Responsive design para móvil */
@@ -352,17 +530,17 @@
     <div class="doctor-interface">
         <!-- Panel de Sesión y Control -->
         <div class="doctor-panel session-panel">
-            <h3>👨‍⚕️ Panel del Médico</h3>
+            <h3>Panel del Médico</h3>
 
             <!-- Información del médico -->
             <div class="doctor-form">
                 <div class="control-group">
-                    <label for="doctorName">👤 Nombre del Médico:</label>
+                    <label for="doctorName">Nombre del Médico:</label>
                     <input type="text" id="doctorName" placeholder="Dr. Nombre Apellido">
                 </div>
 
                 <div class="control-group">
-                    <label for="doctorSpecialty">🏥 Especialidad:</label>
+                    <label for="doctorSpecialty">Especialidad:</label>
                     <select id="doctorSpecialty">
                         <option value="traumatologia">Traumatología</option>
                         <option value="fisiatria">Fisiatría</option>
@@ -373,7 +551,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label for="examType">🔍 Tipo de Examen:</label>
+                    <label for="examType">Tipo de Examen:</label>
                     <select id="examType">
                         <option value="completo">Examen Completo</option>
                         <option value="postura">Evaluación Postural</option>
@@ -382,12 +560,12 @@
                     </select>
                 </div>
 
-                <button id="createSessionBtn" class="btn btn-primary">🚀 Crear Sesión</button>
+                <button id="createSessionBtn" class="btn btn-primary">Crear Sesión</button>
             </div>
 
             <!-- Código de sesión -->
             <div id="sessionCodeContainer" class="hidden">
-                <h4>📱 Código para el Paciente</h4>
+                <h4>Código para el Paciente</h4>
                 <div id="sessionCodeDisplay" class="session-code-display">------</div>
                 <p style="text-align: center; font-size: 14px; color: #666;">
                     Comparta este código con el paciente
@@ -396,12 +574,12 @@
 
             <!-- Estado de conexión -->
             <div id="connectionStatus" class="connection-status status-waiting">
-                🟡 Esperando conexión de paciente
+                Esperando conexión de paciente
             </div>
 
             <!-- Información del paciente -->
             <div id="patientInfo" class="patient-info hidden">
-                <h4>👤 Información del Paciente</h4>
+                <h4>Información del Paciente</h4>
                 <div id="patientDetails">
                     <p><strong>Nombre:</strong> <span id="patientName">-</span></p>
                     <p><strong>Edad:</strong> <span id="patientAge">-</span></p>
@@ -411,50 +589,50 @@
 
             <!-- Controles de examen -->
             <div class="exam-controls">
-                <h4>🔬 Controles de Examen</h4>
+                <h4>Controles de Examen</h4>
                 <div class="doctor-controls">
-                    <button id="startExamBtn" class="btn btn-primary" disabled>▶️ Iniciar Examen</button>
-                    <button id="startGuidedBtn" class="btn btn-accent" disabled>🎯 Secuencia Guiada</button>
-                    <button id="stopExamBtn" class="btn btn-secondary" disabled>⏹️ Detener Examen</button>
-                    <button id="countdownBtn" class="btn btn-accent" disabled>⏰ Cuenta Regresiva</button>
+                    <button id="startExamBtn" class="btn btn-primary" disabled>Iniciar Examen</button>
+                    <button id="startGuidedBtn" class="btn btn-accent" disabled>Secuencia Guiada</button>
+                    <button id="stopExamBtn" class="btn btn-secondary" disabled>Detener Examen</button>
+                    <button id="countdownBtn" class="btn btn-accent" disabled>Cuenta Regresiva</button>
                 </div>
             </div>
 
             <!-- Instrucciones rápidas -->
             <div class="control-group">
-                <label>📋 Instrucciones Rápidas:</label>
+                <label>Instrucciones Rápidas:</label>
                 <div class="quick-instructions">
-                    <button class="quick-btn" data-instruction="Posición de pie, brazos relajados">🧍 Posición Base</button>
-                    <button class="quick-btn" data-instruction="Levante ambos brazos lateralmente">🙋‍♀️ Brazos Arriba</button>
-                    <button class="quick-btn" data-instruction="Mire directamente a la cámara">👀 Vista Frontal</button>
-                    <button class="quick-btn" data-instruction="Manténgase quieto por favor">⏸️ Quieto</button>
-                    <button class="quick-btn" data-instruction="Puede relajarse">😌 Relajarse</button>
-                    <button class="quick-btn" data-instruction="Gire lentamente a la izquierda">↶ Girar Izq</button>
+                    <button class="quick-btn" data-instruction="Posición de pie, brazos relajados">Posición Base</button>
+                    <button class="quick-btn" data-instruction="Levante ambos brazos lateralmente">Brazos Arriba</button>
+                    <button class="quick-btn" data-instruction="Mire directamente a la cámara">Vista Frontal</button>
+                    <button class="quick-btn" data-instruction="Manténgase quieto por favor">Quieto</button>
+                    <button class="quick-btn" data-instruction="Puede relajarse">Relajarse</button>
+                    <button class="quick-btn" data-instruction="Gire lentamente a la izquierda">Girar Izq</button>
                 </div>
             </div>
 
             <!-- Instrucción personalizada -->
             <div class="control-group">
-                <label for="customInstruction">✍️ Instrucción Personalizada:</label>
+                <label for="customInstruction">Instrucción Personalizada:</label>
                 <input type="text" id="customInstruction" class="instruction-input"
                        placeholder="Escriba una instrucción personalizada">
-                <button id="sendInstructionBtn" class="btn btn-accent" disabled>📤 Enviar</button>
+                <button id="sendInstructionBtn" class="btn btn-accent" disabled>Enviar</button>
             </div>
         </div>
 
         <!-- Panel de Video -->
         <div class="video-panel">
-            <div class="video-header">📹 Análisis en Tiempo Real</div>
+            <div class="video-header">Análisis en Tiempo Real</div>
 
             <div class="video-content">
                 <!-- Sección de Video del Paciente -->
                 <div class="patient-video-section">
-                    <div class="patient-video-title">🎥 Video del Paciente</div>
+                    <div class="patient-video-title">Video del Paciente</div>
                     <div id="patientVideoContainer" class="patient-video-container">
                         <video id="remoteVideo" class="patient-video" autoplay playsinline></video>
                         <div id="videoPlaceholder" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px; background: #000;">
                             <div style="text-align: center;">
-                                📹 Esperando video<br>
+                                Esperando video<br>
                                 <small style="font-size: 10px;">Conectando WebRTC...</small>
                             </div>
                         </div>
@@ -464,14 +642,14 @@
 
                 <!-- Sección de Análisis de Esqueleto -->
                 <div class="skeleton-analysis-section">
-                    <div class="skeleton-title">🦴 Análisis del Esqueleto</div>
+                    <div class="skeleton-title">Análisis del Esqueleto</div>
                     <div class="skeleton-canvas-container">
                         <canvas id="patientCanvas"></canvas>
                         <div id="videoOverlay" class="pose-overlay"></div>
 
                         <div id="noPatientMessage" class="no-patient-message">
                             <div style="text-align: center; color: white;">
-                                <h3>👤 Esperando conexión del paciente</h3>
+                                <h3>Esperando conexión del paciente</h3>
                                 <p>El paciente debe ingresar el código de sesión</p>
                             </div>
                         </div>
@@ -482,11 +660,11 @@
 
         <!-- Panel de Métricas -->
         <div class="doctor-panel metrics-panel">
-            <h3>📊 Análisis en Tiempo Real</h3>
+            <h3>Análisis en Tiempo Real</h3>
 
             <!-- Métricas posturales -->
             <div class="metric-group">
-                <h4>🏃‍♀️ Postura</h4>
+                <h4>Postura</h4>
                 <div class="metric">
                     <span>Alineación Cervical:</span>
                     <span id="cervicalAlign" class="metric-value">-- °</span>
@@ -503,7 +681,7 @@
 
             <!-- Métricas articulares -->
             <div class="metric-group">
-                <h4>🦴 Articulaciones</h4>
+                <h4>Articulaciones</h4>
                 <div class="metric">
                     <span>Hombro Derecho:</span>
                     <span id="rightShoulder" class="metric-value">-- °</span>
@@ -524,7 +702,7 @@
 
             <!-- Métricas de simetría -->
             <div class="metric-group">
-                <h4>⚖️ Simetría</h4>
+                <h4>Simetría</h4>
                 <div class="metric">
                     <span>Simetría Hombros:</span>
                     <span id="shoulderSymmetry" class="metric-value">-- %</span>
@@ -541,8 +719,8 @@
 
             <!-- Panel de captura -->
             <div class="capture-panel">
-                <h4>📸 Capturas</h4>
-                <button id="captureBtn" class="btn btn-primary" disabled>📸 Capturar Momento</button>
+                <h4>Capturas</h4>
+                <button id="captureBtn" class="btn btn-primary" disabled>Capturar Momento</button>
                 <div id="snapshotsList" class="snapshots-list">
                     <!-- Snapshots aparecerán aquí -->
                 </div>
@@ -550,7 +728,7 @@
 
             <!-- Estadísticas de transmisión -->
             <div class="stats-panel">
-                <h4>📡 Estadísticas</h4>
+                <h4>Estadísticas</h4>
                 <div id="transmissionStats" class="transmission-stats">
                     FPS: 0<br>
                     Latencia: 0ms<br>
@@ -561,15 +739,15 @@
 
             <!-- Notas del médico -->
             <div class="control-group">
-                <label for="doctorNotes">📝 Notas del Examen:</label>
+                <label for="doctorNotes">Notas del Examen:</label>
                 <textarea id="doctorNotes" class="doctor-notes"
                           placeholder="Escriba sus observaciones aquí..."></textarea>
             </div>
 
             <!-- Acciones finales -->
             <div class="doctor-controls">
-                <button id="generateReportBtn" class="btn btn-accent" disabled>📄 Generar Informe</button>
-                <button id="endSessionBtn" class="btn btn-secondary" disabled>🔚 Finalizar Sesión</button>
+                <button id="generateReportBtn" class="btn btn-accent" disabled>Generar Informe</button>
+                <button id="endSessionBtn" class="btn btn-secondary" disabled>Finalizar Sesión</button>
             </div>
         </div>
     </div>
