@@ -4,409 +4,278 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Paciente - Examen Osteomuscular Virtual</title>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.15"></script>
-    <script src="/socket.io/socket.io.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+
     <style>
-        body {
-            font-family: 'Figtree', sans-serif;
-            background: #1c1e21;
+        * {
             margin: 0;
             padding: 0;
-            color: #e4e6eb;
+            box-sizing: border-box;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 24px;
-            background: transparent;
-            padding: 20px;
-            border-radius: 0;
-            box-shadow: none;
-        }
-
-        header h1 {
-            color: #e4e6eb;
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 8px;
-        }
-
-        header p {
-            color: #b0b3b8;
-            font-size: 15px;
-        }
-
-        .patient-interface {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .connection-panel {
-            background: #242527;
-            padding: 24px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            text-align: center;
-            border: 1px solid #3a3b3c;
-        }
-
-        .connection-panel h3 {
-            color: #e4e6eb;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .session-code-input {
-            font-size: 24px;
-            text-align: center;
-            padding: 12px;
+        body {
+            font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: #1c1e21;
-            border: 1px solid #3a3b3c;
-            border-radius: 8px;
-            letter-spacing: 6px;
-            text-transform: uppercase;
-            width: 200px;
-            margin: 12px;
             color: #e4e6eb;
-            font-family: 'Figtree', sans-serif;
-            font-weight: 600;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
-        .session-code-input:focus {
-            outline: none;
-            border-color: #5b8def;
-        }
-
-        .session-code-input::placeholder {
-            color: #6a6b6c;
-        }
-
-        .connection-status {
-            padding: 12px;
-            border-radius: 8px;
-            margin: 12px 0;
-            font-weight: 500;
-            font-size: 13px;
-        }
-
-        .status-disconnected {
-            background: #3a1f1f;
-            color: #e85d55;
-            border: 1px solid #522d2d;
-        }
-        .status-connecting {
-            background: #3a3214;
-            color: #f7b928;
-            border: 1px solid #524416;
-        }
-        .status-connected {
-            background: #1f3a24;
-            color: #5ebd6d;
-            border: 1px solid #2d5234;
-        }
-        .status-examining {
-            background: #1f2d3a;
-            color: #5b8def;
-            border: 1px solid #2d3e52;
-        }
-
-        .video-preview {
-            position: relative;
-            margin: 0;
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .patient-video {
-            width: 100%;
-            border-radius: 12px;
-            border: none;
-        }
-
-        .instructions-panel {
-            background: #242527;
-            padding: 20px;
-            border-radius: 12px;
-            margin: 20px 0;
-            border: 1px solid #3a3b3c;
-        }
-
-        .instructions-panel h4 {
-            color: #e4e6eb;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .instructions-panel #doctorInstructions {
-            color: #b0b3b8;
-            font-size: 14px;
-        }
-
-        .doctor-commands {
-            background: #1c1e21;
-            padding: 16px;
-            border-radius: 12px;
-            margin: 16px 0;
-            border: 1px solid #f7b928;
-        }
-
-        .doctor-commands h4 {
-            color: #e4e6eb;
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .doctor-commands p {
-            color: #f7b928;
-            font-size: 14px;
-        }
-
-        .patient-controls {
+        /* ============================================
+           PANTALLA DE LOGIN
+        ============================================ */
+        #loginScreen {
+            min-height: 100vh;
             display: flex;
-            gap: 12px;
+            align-items: center;
             justify-content: center;
-            margin: 24px 0;
-            flex-wrap: wrap;
+            padding: 20px;
+            background: linear-gradient(135deg, #1c1e21 0%, #242527 100%);
         }
 
-        .patient-form {
-            background: #1c1e21;
-            padding: 24px;
-            border-radius: 12px;
+        .login-container {
+            max-width: 480px;
+            width: 100%;
+        }
+
+        .login-card {
+            background: #242527;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             border: 1px solid #3a3b3c;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
             margin-bottom: 20px;
+        }
+
+        .logo-container img {
+            height: 60px;
+            opacity: 0.9;
+        }
+
+        .login-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e4e6eb;
+            margin-bottom: 8px;
+        }
+
+        .login-header p {
+            font-size: 14px;
+            color: #b0b3b8;
         }
 
         .form-group {
-            margin: 16px 0;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            font-size: 13px;
             font-weight: 500;
             color: #b0b3b8;
-            font-size: 13px;
+            margin-bottom: 8px;
         }
 
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
+        .form-group input {
             width: 100%;
-            padding: 10px 12px;
-            background: #242527;
+            padding: 12px 16px;
+            background: #1c1e21;
             border: 1px solid #3a3b3c;
             border-radius: 8px;
             font-size: 14px;
             color: #e4e6eb;
             font-family: 'Figtree', sans-serif;
+            transition: all 0.2s ease;
         }
 
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
+        .form-group input:focus {
             outline: none;
             border-color: #5b8def;
+            background: #242527;
         }
 
         .form-group input::placeholder {
             color: #6a6b6c;
         }
 
-        .countdown-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 72px;
-            font-weight: bold;
-            border-radius: 10px;
-        }
-
-        .instructions-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .instruction-card {
-            background: white;
-            border-radius: 15px;
-            padding: 40px;
-            max-width: 500px;
+        .session-code-input {
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            font-size: 20px !important;
+            letter-spacing: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
-        .instruction-icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-
-        .instruction-card h3 {
-            color: #1976d2;
-            margin: 20px 0;
-            font-size: 24px;
-        }
-
-        .instruction-card p {
-            font-size: 18px;
-            margin: 20px 0;
-            color: #333;
-        }
-
-        .step-progress {
-            font-weight: bold;
-            color: #666;
-            margin: 15px 0;
-        }
-
-        .instruction-progress {
-            background: #e0e0e0;
-            height: 8px;
-            border-radius: 4px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            background: #1976d2;
-            height: 100%;
-            width: 0%;
-            transition: width 0.1s ease;
-            border-radius: 4px;
-        }
-
-        .instruction-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 20px;
-        }
-
-        .btn-instruction {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            background: #f0f0f0;
-            color: #333;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .btn-instruction:hover {
-            background: #e0e0e0;
-        }
-
-        .btn-instruction.active {
-            background: #1976d2;
+        .btn-connect {
+            width: 100%;
+            padding: 14px;
+            background: #5b8def;
             color: white;
-        }
-
-        .btn {
-            padding: 10px 20px;
             border: none;
             border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: 'Figtree', sans-serif;
+            margin-top: 8px;
         }
 
-        .btn-primary {
-            background: #5b8def;
-            color: #ffffff;
+        .btn-connect:hover:not(:disabled) {
+            background: #4a7cd6;
+            transform: translateY(-1px);
         }
 
-        .btn-primary:hover:not(:disabled) {
-            background: #4a7de0;
-        }
-
-        .btn-secondary {
+        .btn-connect:disabled {
             background: #3a3b3c;
-            color: #e4e6eb;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #4a4b4c;
-        }
-
-        .btn-accent {
-            background: #f7b928;
-            color: #1c1e21;
-        }
-
-        .btn-accent:hover:not(:disabled) {
-            background: #e6a817;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
             cursor: not-allowed;
+            opacity: 0.5;
         }
 
-        /* Contenedor split para video y skeleton */
-        .video-split-container {
+        .connection-status {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status-waiting {
+            background: rgba(91, 139, 239, 0.1);
+            color: #5b8def;
+            border: 1px solid rgba(91, 139, 239, 0.2);
+        }
+
+        .status-connected {
+            background: rgba(94, 189, 109, 0.1);
+            color: #5ebd6d;
+            border: 1px solid rgba(94, 189, 109, 0.2);
+        }
+
+        .status-error {
+            background: rgba(232, 93, 85, 0.1);
+            color: #e85d55;
+            border: 1px solid rgba(232, 93, 85, 0.2);
+        }
+
+        .status-connecting {
+            background: rgba(247, 185, 40, 0.1);
+            color: #f7b928;
+            border: 1px solid rgba(247, 185, 40, 0.2);
+        }
+
+        /* ============================================
+           PANTALLA DE EXAMEN
+        ============================================ */
+        #examScreen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .exam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #242527;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #3a3b3c;
+        }
+
+        .exam-header-left h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #e4e6eb;
+            margin-bottom: 4px;
+        }
+
+        .exam-header-left p {
+            font-size: 13px;
+            color: #b0b3b8;
+        }
+
+        .exam-header-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.connected {
+            background: rgba(94, 189, 109, 0.15);
+            color: #5ebd6d;
+        }
+
+        .btn-disconnect {
+            padding: 8px 16px;
+            background: #e85d55;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-disconnect:hover {
+            background: #d84d45;
+        }
+
+        .exam-content {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin: 20px 0;
+            gap: 20px;
         }
 
-        .video-section,
-        .skeleton-section {
-            background: #000000;
+        .video-card {
+            background: #242527;
             border-radius: 12px;
-            padding: 0;
-            border: 1px solid #3a3b3c;
             overflow: hidden;
+            border: 1px solid #3a3b3c;
         }
 
-        .video-section-title {
-            color: #5ebd6d;
-            text-align: center;
-            padding: 12px;
-            margin: 0;
-            font-size: 14px;
-            font-weight: 600;
+        .video-card-header {
+            padding: 16px;
             background: #1c1e21;
             border-bottom: 1px solid #3a3b3c;
         }
 
-        .skeleton-section .video-section-title {
-            color: #f7b928;
+        .video-card-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e4e6eb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .skeleton-preview {
+        .header-badge {
+            font-size: 18px;
+        }
+
+        .video-card-body {
             position: relative;
             background: #000;
             min-height: 400px;
@@ -415,180 +284,353 @@
             justify-content: center;
         }
 
-        #poseCanvas {
+        #patientVideo {
             width: 100%;
             height: 100%;
+            object-fit: contain;
             display: block;
-            background: #000;
         }
 
-        .no-analysis-message {
+        #poseCanvas {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #b0b3b8;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .video-placeholder {
+            color: #6a6b6c;
             text-align: center;
-            z-index: 5;
             font-size: 14px;
         }
 
-        /* Responsive para móvil */
-        @media (max-width: 768px) {
-            .patient-interface {
-                padding: 10px;
-            }
-
-            .video-split-container {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .video-section {
-                order: 1;
-            }
-
-            .skeleton-section {
-                order: 2;
-            }
-
-            .skeleton-preview {
-                min-height: 300px;
-            }
-        }
-
-        .status-panel {
+        .instructions-card {
+            grid-column: 1 / -1;
             background: #242527;
-            padding: 16px;
             border-radius: 12px;
-            margin: 20px 0;
+            padding: 20px;
             border: 1px solid #3a3b3c;
-            text-align: center;
         }
 
-        .status-panel div {
+        .instructions-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e4e6eb;
+            margin-bottom: 16px;
+        }
+
+        .instruction-item {
+            padding: 12px;
+            background: #1c1e21;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
             color: #b0b3b8;
-            font-size: 13px;
-            margin: 6px 0;
+        }
+
+        .stats-panel {
+            grid-column: 1 / -1;
+            background: #242527;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid #3a3b3c;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            background: #1c1e21;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #b0b3b8;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e4e6eb;
+        }
+
+        /* Overlays */
+        .countdown-overlay {
+            display: none;
+        }
+
+        .guided-instructions-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .instruction-card {
+            background: #242527;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid #3a3b3c;
+        }
+
+        .instruction-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .instruction-card h3 {
+            color: #5b8def;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .instruction-card p {
+            color: #e4e6eb;
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .step-progress {
+            color: #b0b3b8;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .instruction-progress {
+            background: #3a3b3c;
+            height: 4px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .instruction-progress-bar {
+            background: #5b8def;
+            height: 100%;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .instruction-controls {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .btn-instruction {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-skip {
+            background: #3a3b3c;
+            color: #e4e6eb;
+        }
+
+        .btn-skip:hover {
+            background: #4a4b4c;
+        }
+
+        .btn-audio {
+            background: #5b8def;
+            color: white;
+        }
+
+        .btn-audio:hover {
+            background: #4a7cd6;
         }
 
         .hidden {
             display: none !important;
         }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .exam-content {
+                grid-template-columns: 1fr;
+            }
+
+            .exam-header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .exam-header-right {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container patient-interface">
-        <header>
-            <h1>Paciente - Examen Virtual</h1>
-            <p>Conéctese con su médico para el examen postural</p>
-        </header>
-
-        <!-- Panel de conexión -->
-        <div class="connection-panel">
-            <h3>Conexión con el Médico</h3>
-
-            <div id="connectionForm">
-                <div class="patient-form">
-                    <div class="form-group">
-                        <label for="patientName">Su Nombre:</label>
-                        <input type="text" id="patientName" placeholder="Ingrese su nombre completo">
+    <!-- ============================================
+         PANTALLA DE LOGIN
+    ============================================ -->
+    <div id="loginScreen">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="logo-container">
+                        <img src="logo.png" alt="BSL" onerror="this.style.display='none'">
                     </div>
+                    <h1>Examen Osteomuscular Virtual</h1>
+                    <p>Conéctese con su médico para iniciar el examen</p>
+                </div>
 
+                <form id="loginForm">
                     <div class="form-group">
-                        <label for="patientAge">Edad:</label>
-                        <input type="number" id="patientAge" placeholder="Ingrese su edad" min="1" max="120">
+                        <label for="patientName">Nombre Completo</label>
+                        <input type="text" id="patientName" placeholder="Ingrese su nombre" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="sessionCode">Código de Sesión (proporcionado por el médico):</label>
-                        <input type="text" id="sessionCode" class="session-code-input"
-                               placeholder="ABC123" maxlength="6">
+                        <label for="patientAge">Edad (opcional)</label>
+                        <input type="number" id="patientAge" placeholder="Ej: 35">
                     </div>
 
-                    <button id="connectBtn" class="btn btn-primary">Conectar con Médico</button>
-                </div>
-            </div>
-
-            <div id="connectionStatus" class="connection-status status-disconnected">
-                Desconectado - Ingrese el código de sesión
-            </div>
-        </div>
-
-        <!-- Contenedor de videos dividido -->
-        <div class="video-split-container">
-            <!-- Video en vivo del paciente -->
-            <div class="video-section">
-                <h4 class="video-section-title">Video en Vivo</h4>
-                <div class="video-preview">
-                    <video id="patientVideo" class="patient-video" autoplay playsinline muted></video>
-                    <div id="countdownOverlay" class="countdown-overlay hidden">5</div>
-                </div>
-            </div>
-
-            <!-- Análisis del esqueleto -->
-            <div class="skeleton-section">
-                <h4 class="video-section-title">Análisis del Esqueleto</h4>
-                <div class="skeleton-preview">
-                    <canvas id="poseCanvas"></canvas>
-                    <div id="noAnalysisMessage" class="no-analysis-message">
-                        <p>Esperando análisis de pose...</p>
+                    <div class="form-group">
+                        <label for="sessionCode">Código de Sesión</label>
+                        <input
+                            type="text"
+                            id="sessionCode"
+                            class="session-code-input"
+                            placeholder="ABC123"
+                            maxlength="6"
+                            required
+                        >
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Panel de instrucciones del médico -->
-        <div class="instructions-panel hidden" id="instructionsPanel">
-            <h4>Instrucciones del Médico</h4>
-            <div id="doctorInstructions">
-                Esperando instrucciones del médico...
-            </div>
-        </div>
+                    <button type="submit" class="btn-connect" id="connectBtn">
+                        Conectar con el Médico
+                    </button>
+                </form>
 
-        <!-- Comandos recibidos del médico -->
-        <div id="doctorCommands" class="doctor-commands hidden">
-            <h4>Comando Actual</h4>
-            <p id="currentCommand">-</p>
-        </div>
-
-        <!-- Overlay de instrucciones guiadas -->
-        <div id="guidedInstructionsOverlay" class="instructions-overlay hidden">
-            <div class="instruction-card">
-                <div class="instruction-icon" id="guidedInstructionIcon"></div>
-                <h3 id="guidedInstructionTitle">Preparando examen...</h3>
-                <p id="guidedInstructionText">Iniciando sistema de análisis...</p>
-                <div class="step-progress">
-                    <span id="stepCounter">Paso 1 de 4</span>
-                </div>
-                <div class="instruction-progress">
-                    <div class="progress-bar" id="guidedProgressBar"></div>
-                </div>
-                <div class="instruction-controls">
-                    <button id="skipStepBtn" class="btn-instruction">Saltar</button>
-                    <button id="guidedAudioToggle" class="btn-instruction">Audio</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Controles del paciente -->
-        <div class="patient-controls">
-            <button id="testCameraBtn" class="btn btn-secondary">Probar Cámara</button>
-            <button id="toggleAudioBtn" class="btn btn-accent">Audio</button>
-            <button id="emergencyStopBtn" class="btn" style="background: #e85d55; color: white;">Parar Emergencia</button>
-        </div>
-
-        <!-- Estado de transmisión -->
-        <div class="status-panel">
-            <div id="transmissionStatus">Transmisión: Inactiva</div>
-            <div id="dataStats">Datos: 0 fps</div>
-            <div id="cervicalDebug" style="margin-top: 10px; padding: 10px; background: #242527; border-radius: 6px; font-size: 12px; font-family: monospace;">
-                <div style="color: #5ebd6d; font-weight: 600; margin-bottom: 5px;">📊 Diagnóstico Cervical:</div>
-                <div id="cervicalDebugData" style="color: #e4e6eb;">Esperando datos...</div>
+                <div id="connectionStatus" class="connection-status hidden"></div>
             </div>
         </div>
     </div>
 
+    <!-- ============================================
+         PANTALLA DE EXAMEN
+    ============================================ -->
+    <div id="examScreen">
+        <div class="exam-header">
+            <div class="exam-header-left">
+                <h1>Examen en Progreso</h1>
+                <p id="patientInfo">Paciente conectado</p>
+            </div>
+            <div class="exam-header-right">
+                <div class="status-badge connected" id="connectionBadge">
+                    🟢 Conectado
+                </div>
+                <button class="btn-disconnect" id="disconnectBtn">
+                    Desconectar
+                </button>
+            </div>
+        </div>
+
+        <div class="exam-content">
+            <!-- Video del Paciente -->
+            <div class="video-card">
+                <div class="video-card-header">
+                    <h3><span class="header-badge">📹</span> Su Video</h3>
+                </div>
+                <div class="video-card-body">
+                    <video id="patientVideo" autoplay playsinline></video>
+                    <canvas id="poseCanvas"></canvas>
+                    <div id="videoPlaceholder" class="video-placeholder">
+                        Inicializando cámara...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Análisis en Tiempo Real -->
+            <div class="video-card">
+                <div class="video-card-header">
+                    <h3><span class="header-badge">🦴</span> Análisis Postural</h3>
+                </div>
+                <div class="video-card-body">
+                    <div id="analysisPlaceholder" class="video-placeholder">
+                        Esperando análisis...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instrucciones -->
+            <div class="instructions-card">
+                <h3>📋 Instrucciones del Médico</h3>
+                <div id="doctorInstructions">
+                    <div class="instruction-item">
+                        Esperando instrucciones del médico...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estadísticas -->
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <div class="stat-label">Estado de Transmisión</div>
+                    <div class="stat-value" id="transmissionStatus">Inactiva</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Datos en Tiempo Real</div>
+                    <div class="stat-value" id="dataStats">0 fps</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Diagnóstico Cervical</div>
+                    <div class="stat-value" id="cervicalDebugData" style="font-size: 11px; line-height: 1.4;">
+                        Esperando datos...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay de Instrucciones Guiadas -->
+    <div id="guidedInstructionsOverlay" class="guided-instructions-overlay hidden">
+        <div class="instruction-card">
+            <div class="instruction-icon" id="guidedInstructionIcon">🏥</div>
+            <h3 id="guidedInstructionTitle">Preparación</h3>
+            <p id="guidedInstructionText">Instrucciones del examen...</p>
+            <div class="step-progress" id="stepCounter">Paso 1 de 8</div>
+            <div class="instruction-progress">
+                <div class="instruction-progress-bar" id="guidedProgressBar"></div>
+            </div>
+            <div class="instruction-controls">
+                <button class="btn-instruction btn-skip" id="skipStepBtn">Saltar Paso</button>
+                <button class="btn-instruction btn-audio" id="guidedAudioToggle">🔊 Audio</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Countdown Overlay (hidden by default) -->
+    <div id="countdownOverlay" class="countdown-overlay"></div>
+
+    <!-- Socket.io Client Library -->
+    <script src="/socket.io/socket.io.js"></script>
     <script type="module" src="telemedicine-patient.js"></script>
 </body>
 </html>

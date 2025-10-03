@@ -85,24 +85,32 @@ class TelemedicinePatient {
     }
 
     initializeDOMElements() {
-        // Elementos de conexión
+        // Pantallas
+        this.loginScreen = document.getElementById('loginScreen');
+        this.examScreen = document.getElementById('examScreen');
+
+        // Elementos de conexión (login screen)
+        this.loginForm = document.getElementById('loginForm');
         this.sessionCodeInput = document.getElementById('sessionCode');
         this.patientNameInput = document.getElementById('patientName');
         this.patientAgeInput = document.getElementById('patientAge');
         this.connectBtn = document.getElementById('connectBtn');
         this.connectionStatus = document.getElementById('connectionStatus');
 
+        // Elementos del exam screen
+        this.patientInfo = document.getElementById('patientInfo');
+        this.connectionBadge = document.getElementById('connectionBadge');
+        this.disconnectBtn = document.getElementById('disconnectBtn');
+
         // Elementos de video
         this.video = document.getElementById('patientVideo');
         this.canvas = document.getElementById('poseCanvas');
         this.ctx = this.canvas.getContext('2d');
+        this.videoPlaceholder = document.getElementById('videoPlaceholder');
         this.countdownOverlay = document.getElementById('countdownOverlay');
 
         // Elementos de interfaz
-        this.instructionsPanel = document.getElementById('instructionsPanel');
         this.doctorInstructions = document.getElementById('doctorInstructions');
-        this.doctorCommands = document.getElementById('doctorCommands');
-        this.currentCommand = document.getElementById('currentCommand');
 
         // Elementos de instrucciones guiadas
         this.guidedInstructionsOverlay = document.getElementById('guidedInstructionsOverlay');
@@ -114,24 +122,22 @@ class TelemedicinePatient {
         this.skipStepBtn = document.getElementById('skipStepBtn');
         this.guidedAudioToggle = document.getElementById('guidedAudioToggle');
 
-        // Controles
-        this.testCameraBtn = document.getElementById('testCameraBtn');
-        this.toggleAudioBtn = document.getElementById('toggleAudioBtn');
-        this.emergencyStopBtn = document.getElementById('emergencyStopBtn');
-
         // Estado
         this.transmissionStatus = document.getElementById('transmissionStatus');
         this.dataStats = document.getElementById('dataStats');
     }
 
     setupEventListeners() {
-        // Conectar con médico
-        this.connectBtn.addEventListener('click', () => this.connectToDoctor());
+        // Form submit para login
+        this.loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.connectToDoctor();
+        });
 
-        // Controles
-        this.testCameraBtn.addEventListener('click', () => this.testCamera());
-        this.toggleAudioBtn.addEventListener('click', () => this.toggleAudio());
-        this.emergencyStopBtn.addEventListener('click', () => this.emergencyStop());
+        // Botón disconnect
+        if (this.disconnectBtn) {
+            this.disconnectBtn.addEventListener('click', () => this.disconnect());
+        }
 
         // Controles de instrucciones guiadas
         this.skipStepBtn.addEventListener('click', () => this.skipCurrentStep());
@@ -162,8 +168,13 @@ class TelemedicinePatient {
             this.doctorData = doctorData;
             this.isConnected = true;
 
-            this.updateConnectionStatus(`🟢 Conectado con Dr. ${doctorData.name || 'Médico'}`, 'connected');
-            this.showInstructionsPanel();
+            // Cambiar a pantalla de examen
+            this.showExamScreen();
+
+            // Actualizar info del paciente en header
+            this.patientInfo.textContent = `${this.patientData.name} - Conectado con Dr. ${doctorData.name || 'Médico'}`;
+
+            // Iniciar cámara
             this.startCamera();
         });
 
@@ -662,8 +673,11 @@ class TelemedicinePatient {
                 break;
 
             case 'instruction':
-                this.currentCommand.textContent = `📋 ${data.text}`;
-                this.doctorInstructions.innerHTML = `<p><strong>${data.title || 'Instrucción'}:</strong> ${data.text}</p>`;
+                this.doctorInstructions.innerHTML = `
+                    <div class="instruction-item">
+                        <strong>${data.title || 'Instrucción del Médico'}:</strong> ${data.text}
+                    </div>
+                `;
                 if (this.audioEnabled && data.text) {
                     this.speak(data.text);
                 }
@@ -771,35 +785,6 @@ class TelemedicinePatient {
         countdownBigOverlay.style.display = 'none';
     }
 
-    testCamera() {
-        if (!this.video.srcObject) {
-            this.startCamera();
-        } else {
-            console.log('📹 Cámara ya activa');
-        }
-    }
-
-    toggleAudio() {
-        this.audioEnabled = !this.audioEnabled;
-        this.toggleAudioBtn.textContent = this.audioEnabled ? '🔊 Audio' : '🔇 Audio';
-        console.log(`🔊 Audio ${this.audioEnabled ? 'habilitado' : 'deshabilitado'}`);
-    }
-
-    emergencyStop() {
-        console.log('🚨 Parada de emergencia activada');
-
-        this.stopTransmission();
-
-        if (this.video.srcObject) {
-            this.video.srcObject.getTracks().forEach(track => track.stop());
-        }
-
-        this.socket.disconnect();
-
-        this.updateConnectionStatus('🚨 Parada de emergencia - Desconectado', 'error');
-
-        alert('🚨 Parada de emergencia activada. La sesión se ha desconectado.');
-    }
 
     speak(text) {
         if (!this.audioEnabled || !window.speechSynthesis) return;
@@ -846,22 +831,51 @@ class TelemedicinePatient {
         }, duration);
     }
 
-    showInstructionsPanel() {
-        this.instructionsPanel.classList.remove('hidden');
+
+    showExamScreen() {
+        this.loginScreen.style.display = 'none';
+        this.examScreen.style.display = 'block';
     }
 
-    showDoctorCommands() {
-        this.doctorCommands.classList.remove('hidden');
+    showLoginScreen() {
+        this.examScreen.style.display = 'none';
+        this.loginScreen.style.display = 'flex';
+    }
+
+    disconnect() {
+        if (confirm('¿Está seguro que desea desconectar la sesión?')) {
+            this.stopTransmission();
+
+            if (this.video && this.video.srcObject) {
+                this.video.srcObject.getTracks().forEach(track => track.stop());
+            }
+
+            if (this.peerConnection) {
+                this.peerConnection.close();
+            }
+
+            this.socket.disconnect();
+            this.isConnected = false;
+
+            // Volver a login screen
+            this.showLoginScreen();
+
+            // Resetear form
+            this.loginForm.reset();
+            this.connectionStatus.classList.add('hidden');
+        }
     }
 
     updateConnectionStatus(message, type) {
         this.connectionStatus.textContent = message;
         this.connectionStatus.className = `connection-status status-${type}`;
+        this.connectionStatus.classList.remove('hidden');
     }
 
     updateTransmissionStatus(message, type) {
-        this.transmissionStatus.textContent = message;
-        this.transmissionStatus.className = `transmission-${type}`;
+        if (this.transmissionStatus) {
+            this.transmissionStatus.textContent = message;
+        }
     }
 
     updateDataStats(fps) {
