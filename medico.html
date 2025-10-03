@@ -296,47 +296,48 @@
         }
 
         .btn {
-            padding: 10px 16px;
+            padding: 12px 18px;
             border: none;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background 0.2s ease;
             font-family: 'Figtree', sans-serif;
             width: 100%;
+            background: #3e4450;
+            color: #ffffff;
+            text-align: left;
         }
 
         .btn-primary {
-            background: #5b8def;
-            color: #ffffff;
+            background: #3e4450;
         }
 
         .btn-primary:hover:not(:disabled) {
-            background: #4a7de0;
+            background: #4a5060;
         }
 
         .btn-secondary {
-            background: #3a3b3c;
-            color: #e4e6eb;
+            background: #3e4450;
         }
 
         .btn-secondary:hover:not(:disabled) {
-            background: #4a4b4c;
+            background: #4a5060;
         }
 
         .btn-accent {
-            background: #f7b928;
-            color: #1c1e21;
+            background: #3e4450;
         }
 
         .btn-accent:hover:not(:disabled) {
-            background: #e6a817;
+            background: #4a5060;
         }
 
         .btn:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
+            background: #2a2d35;
         }
 
         .quick-instructions {
@@ -347,21 +348,21 @@
         }
 
         .quick-btn {
-            padding: 8px 10px;
+            padding: 10px 12px;
             font-size: 12px;
-            border: 1px solid #3a3b3c;
-            border-radius: 8px;
-            background: #1c1e21;
-            color: #b0b3b8;
+            border: none;
+            border-radius: 6px;
+            background: #3e4450;
+            color: #ffffff;
             cursor: pointer;
             font-family: 'Figtree', sans-serif;
             font-weight: 500;
-            transition: all 0.2s ease;
+            transition: background 0.2s ease;
+            text-align: left;
         }
 
         .quick-btn:hover {
-            background: #3a3b3c;
-            color: #e4e6eb;
+            background: #4a5060;
         }
 
         .exam-controls {
@@ -530,34 +531,16 @@
     <div class="doctor-interface">
         <!-- Panel de Sesión y Control -->
         <div class="doctor-panel session-panel">
-            <h3>Panel del Médico</h3>
+            <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px;">
+                <img src="logo.png" alt="BSL" style="height: 48px; opacity: 0.9; margin-bottom: 8px;">
+                <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #e4e6eb;">Prueba Osteomuscular</h3>
+            </div>
 
             <!-- Información del médico -->
             <div class="doctor-form">
                 <div class="control-group">
                     <label for="doctorName">Nombre del Médico:</label>
                     <input type="text" id="doctorName" placeholder="Dr. Nombre Apellido">
-                </div>
-
-                <div class="control-group">
-                    <label for="doctorSpecialty">Especialidad:</label>
-                    <select id="doctorSpecialty">
-                        <option value="traumatologia">Traumatología</option>
-                        <option value="fisiatria">Fisiatría</option>
-                        <option value="fisioterapia">Fisioterapia</option>
-                        <option value="medicina_general">Medicina General</option>
-                        <option value="reumatologia">Reumatología</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label for="examType">Tipo de Examen:</label>
-                    <select id="examType">
-                        <option value="completo">Examen Completo</option>
-                        <option value="postura">Evaluación Postural</option>
-                        <option value="rangos">Rangos de Movimiento</option>
-                        <option value="simetria">Análisis de Simetría</option>
-                    </select>
                 </div>
 
                 <button id="createSessionBtn" class="btn btn-primary">Crear Sesión</button>
@@ -573,9 +556,7 @@
             </div>
 
             <!-- Estado de conexión -->
-            <div id="connectionStatus" class="connection-status status-waiting">
-                Esperando conexión de paciente
-            </div>
+            <div id="connectionStatus" class="connection-status status-waiting hidden"></div>
 
             <!-- Información del paciente -->
             <div id="patientInfo" class="patient-info hidden">
@@ -592,7 +573,7 @@
                 <h4>Controles de Examen</h4>
                 <div class="doctor-controls">
                     <button id="startExamBtn" class="btn btn-primary" disabled>Iniciar Examen</button>
-                    <button id="startGuidedBtn" class="btn btn-accent" disabled>Secuencia Guiada</button>
+                    <button id="startGuidedBtn" class="btn btn-accent" disabled>Examen Guiado</button>
                     <button id="stopExamBtn" class="btn btn-secondary" disabled>Detener Examen</button>
                     <button id="countdownBtn" class="btn btn-accent" disabled>Cuenta Regresiva</button>
                 </div>

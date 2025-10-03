@@ -175,7 +175,7 @@ class TelemedicinePatient {
 
         // Comandos del médico
         this.socket.on('receive-command', ({ command, data, timestamp }) => {
-            console.log('📋 Comando recibido:', command, data);
+            // console.log('📋 Comando recibido:', command, data);
             this.handleDoctorCommand(command, data);
         });
 
@@ -189,17 +189,13 @@ class TelemedicinePatient {
 
         // Médico listo para WebRTC
         this.socket.on('doctor-ready-for-webrtc', ({ sessionCode, message }) => {
-            console.log('📹 Médico listo para recibir video, iniciando WebRTC...');
             // Iniciar WebRTC ahora que el médico está listo
             if (this.localStream) {
-                console.log('✅ Stream local disponible, configurando WebRTC');
                 this.setupWebRTC(this.localStream);
             } else {
-                console.log('⏳ Stream local no disponible aún, esperando...');
                 // Reintentar después de 1 segundo si el stream no está listo
                 setTimeout(() => {
                     if (this.localStream) {
-                        console.log('✅ Stream local ahora disponible, configurando WebRTC');
                         this.setupWebRTC(this.localStream);
                     } else {
                         console.error('❌ Stream local no disponible después de espera');
@@ -210,15 +206,12 @@ class TelemedicinePatient {
 
         // WebRTC signaling
         this.socket.on('webrtc-answer', async ({ answer }) => {
-            console.log('📹 Respuesta WebRTC recibida');
             if (this.peerConnection) {
                 await this.peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-                console.log('✅ Remote description establecida');
             }
         });
 
         this.socket.on('webrtc-ice-candidate', async ({ candidate }) => {
-            console.log('🧊 ICE candidate recibido');
             if (this.peerConnection && candidate) {
                 await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
             }
@@ -320,12 +313,8 @@ class TelemedicinePatient {
             this.video.onloadedmetadata = async () => {
                 this.canvas.width = this.video.videoWidth;
                 this.canvas.height = this.video.videoHeight;
-                console.log('📹 Cámara iniciada:', this.video.videoWidth, 'x', this.video.videoHeight);
-                console.log('🎨 Canvas configurado:', this.canvas.width, 'x', this.canvas.height);
 
                 // WebRTC se iniciará cuando el servidor envíe 'doctor-ready-for-webrtc'
-                console.log('⏳ Esperando que el médico esté listo para WebRTC...');
-
                 this.startTransmission();
             };
 
@@ -339,14 +328,10 @@ class TelemedicinePatient {
 
     async setupWebRTC(stream) {
         try {
-            console.log('🔗 Configurando WebRTC...');
-
             if (!this.sessionCode) {
                 console.error('❌ No hay sessionCode disponible para WebRTC');
                 return;
             }
-
-            console.log('📋 SessionCode disponible:', this.sessionCode);
 
             // Crear peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
@@ -354,13 +339,11 @@ class TelemedicinePatient {
             // Agregar tracks del stream al peer connection
             stream.getTracks().forEach(track => {
                 this.peerConnection.addTrack(track, stream);
-                console.log('📹 Track agregado:', track.kind);
             });
 
             // Manejar ICE candidates
             this.peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
-                    console.log('🧊 Enviando ICE candidate');
                     this.socket.emit('webrtc-ice-candidate', {
                         sessionCode: this.sessionCode,
                         candidate: event.candidate
@@ -370,7 +353,6 @@ class TelemedicinePatient {
 
             // Manejar estado de conexión
             this.peerConnection.onconnectionstatechange = () => {
-                console.log('🔗 Estado WebRTC:', this.peerConnection.connectionState);
                 if (this.peerConnection.connectionState === 'connected') {
                     console.log('✅ Video streaming conectado');
                 }
@@ -381,13 +363,10 @@ class TelemedicinePatient {
             await this.peerConnection.setLocalDescription(offer);
 
             // Enviar offer al médico
-            console.log('📤 Enviando WebRTC offer al médico');
-            console.log('📋 Offer SDP:', offer.type, offer.sdp?.substring(0, 50) + '...');
             this.socket.emit('webrtc-offer', {
                 sessionCode: this.sessionCode,
                 offer: offer
             });
-            console.log('✅ Offer enviado con sessionCode:', this.sessionCode);
 
         } catch (error) {
             console.error('❌ Error configurando WebRTC:', error);
@@ -442,16 +421,7 @@ class TelemedicinePatient {
 
                 this.socket.emit('pose-data', dataToSend);
 
-                // Log cada 30 frames para no saturar consola
-                if (this.transmissionStats.frameCount % 30 === 0) {
-                    console.log('📤 Enviando datos:', {
-                        sessionCode: this.sessionCode,
-                        landmarksCount: landmarks.length,
-                        frame: this.transmissionStats.frameCount
-                    });
-                }
-
-                // Actualizar estadísticas
+                // Actualizar estadísticas (sin log para no saturar consola)
                 this.transmissionStats.frameCount++;
             }
 
@@ -569,10 +539,50 @@ class TelemedicinePatient {
             x: (leftShoulder.x + rightShoulder.x) / 2,
             y: (leftShoulder.y + rightShoulder.y) / 2
         };
+
+        // CÁLCULO CORREGIDO: Medir desviación lateral (horizontal) de la cabeza
+        // En lugar de atan2, usamos directamente la desviación horizontal en grados
         const deltaX = nose.x - shoulderMidpoint.x;
         const deltaY = nose.y - shoulderMidpoint.y;
-        const angle = Math.atan2(deltaX, deltaY) * (180 / Math.PI);
-        return Math.abs(angle);
+
+        // Convertir desviación horizontal a ángulo en grados
+        // deltaX representa la fracción de la anchura de la imagen (0-1)
+        // Multiplicamos por un factor de escala para obtener grados aproximados
+        // Un desplazamiento de 0.1 (10% del ancho) ≈ 5-10 grados de inclinación
+        const lateralAngle = Math.abs(deltaX) * 100; // Convertir a grados aproximados
+
+        // DEBUG: Actualizar panel visual cada 15 frames (~0.5 segundos)
+        if (!this._cervicalDebugCounter) this._cervicalDebugCounter = 0;
+        this._cervicalDebugCounter++;
+
+        if (this._cervicalDebugCounter % 15 === 0) {
+            const debugPanel = document.getElementById('cervicalDebugData');
+            if (debugPanel) {
+                const verticalStatus = deltaY < 0 ? '✅ CABEZA ARRIBA' :
+                                      deltaY > 0 ? '⚠️ CABEZA ABAJO' :
+                                      '⚠️ NIVEL CON HOMBROS';
+
+                debugPanel.innerHTML = `
+                    Nariz Y: ${nose.y.toFixed(3)} | Hombros Y: ${shoulderMidpoint.y.toFixed(3)}<br>
+                    Desviación Vertical: ${(deltaY * 100).toFixed(1)}% (${verticalStatus})<br>
+                    Desviación Lateral: ${(Math.abs(deltaX) * 100).toFixed(1)}%<br>
+                    Ángulo Cervical: <span style="color: ${lateralAngle > 15 ? '#e85d55' : lateralAngle > 10 ? '#f7b928' : '#5ebd6d'}; font-weight: 700;">${lateralAngle.toFixed(1)}°</span>
+                `;
+
+                // También log en consola cada 60 frames para debugging
+                if (this._cervicalDebugCounter % 60 === 0) {
+                    console.log('🔍 Diagnóstico Cervical CORREGIDO:', {
+                        nose_y: nose.y.toFixed(4),
+                        shoulder_mid_y: shoulderMidpoint.y.toFixed(4),
+                        deltaY_percent: (deltaY * 100).toFixed(2) + '%',
+                        deltaX_percent: (deltaX * 100).toFixed(2) + '%',
+                        lateral_angle: lateralAngle.toFixed(2) + '°'
+                    });
+                }
+            }
+        }
+
+        return lateralAngle;
     }
 
     calculatePelvicTilt(leftHip, rightHip) {
@@ -699,6 +709,68 @@ class TelemedicinePatient {
         this.countdownOverlay.classList.add('hidden');
     }
 
+    async showLargeCountdown(seconds) {
+        console.log('🎬 showLargeCountdown iniciado con', seconds, 'segundos');
+
+        // Crear overlay de countdown grande si no existe
+        let countdownBigOverlay = document.getElementById('countdownBigOverlay');
+
+        if (!countdownBigOverlay) {
+            countdownBigOverlay = document.createElement('div');
+            countdownBigOverlay.id = 'countdownBigOverlay';
+            countdownBigOverlay.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 9999;
+                background: rgba(0, 0, 0, 0.95);
+                color: #28a745;
+                font-size: 180px;
+                font-weight: 700;
+                width: 400px;
+                height: 400px;
+                border-radius: 50%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                font-family: 'Figtree', Arial, sans-serif;
+                border: 8px solid #28a745;
+                box-shadow: 0 0 60px rgba(40, 167, 69, 0.6);
+            `;
+            document.body.appendChild(countdownBigOverlay);
+        }
+
+        // Mostrar contador
+        countdownBigOverlay.style.display = 'flex';
+
+        for (let i = Math.floor(seconds); i > 0; i--) {
+            countdownBigOverlay.innerHTML = `
+                <div style="font-size: 180px; line-height: 1;">${i}</div>
+                <div style="font-size: 24px; margin-top: 10px; color: #5ebd6d;">Prepárese y quédese quieto</div>
+            `;
+
+            // Efecto de pulso
+            countdownBigOverlay.style.transform = 'translate(-50%, -50%) scale(1.1)';
+            setTimeout(() => {
+                countdownBigOverlay.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 100);
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        // Mostrar "¡Listo!"
+        countdownBigOverlay.innerHTML = `
+            <div style="font-size: 80px; color: #5ebd6d;">✓</div>
+            <div style="font-size: 36px; margin-top: 20px; color: #5ebd6d;">¡Listo!</div>
+        `;
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        countdownBigOverlay.style.display = 'none';
+    }
+
     testCamera() {
         if (!this.video.srcObject) {
             this.startCamera();
@@ -805,7 +877,7 @@ class TelemedicinePatient {
     // ==========================================
 
     startGuidedSequence(data) {
-        console.log('🎯 Iniciando secuencia guiada:', data.examType);
+        // console.log('🎯 Iniciando secuencia guiada:', data.examType);
 
         this.currentGuidedSequence = {
             examType: data.examType,
@@ -832,7 +904,7 @@ class TelemedicinePatient {
     nextGuidedStep(data) {
         if (!this.currentGuidedSequence || !this.currentGuidedSequence.isActive) return;
 
-        console.log('➡️ Siguiente paso de secuencia guiada:', data.currentStep + 1, 'de', data.totalSteps);
+        // console.log('➡️ Siguiente paso de secuencia guiada:', data.currentStep + 1, 'de', data.totalSteps);
 
         this.currentGuidedSequence.currentStep = data.currentStep;
 
@@ -849,7 +921,7 @@ class TelemedicinePatient {
     }
 
     completeGuidedSequence(data) {
-        console.log('✅ Secuencia guiada completada');
+        // console.log('✅ Secuencia guiada completada');
 
         if (this.currentGuidedSequence) {
             this.currentGuidedSequence.isActive = false;
@@ -878,10 +950,22 @@ class TelemedicinePatient {
     }
 
     displayGuidedInstruction(instruction, stepNumber, totalSteps) {
+        // console.log('📋 Mostrando instrucción:', {
+        //     step: stepNumber,
+        //     total: totalSteps,
+        //     hasCountdown: instruction.showCountdown,
+        //     duration: instruction.duration
+        // });
+
         this.guidedInstructionIcon.textContent = instruction.icon;
         this.guidedInstructionTitle.textContent = instruction.title;
         this.guidedInstructionText.textContent = instruction.text;
         this.stepCounter.textContent = `Paso ${stepNumber} de ${totalSteps}`;
+
+        // Si es el primer paso con countdown, mostrar contador grande
+        if (instruction.showCountdown && stepNumber === 1) {
+            this.showLargeCountdown(instruction.duration / 1000);
+        }
     }
 
     animateGuidedProgress(duration) {

@@ -17,11 +17,10 @@ class TelemedicineDoctor {
         // Datos del médico
         this.doctorData = {
             name: '',
-            specialty: 'traumatologia',
             sessionId: null
         };
 
-        // Tipo de examen médico
+        // Tipo de examen médico (fijo: completo)
         this.currentExamType = 'completo';
 
         // Sistema de instrucciones guiadas médicas
@@ -32,113 +31,74 @@ class TelemedicineDoctor {
             speechSynthesis: window.speechSynthesis
         };
 
-        // Secuencias de examen médico completas del análisis original
-        this.examSequences = {
-            postura: [
-                {
-                    icon: '🧍',
-                    title: 'Posición Inicial',
-                    text: 'Colóquese de pie, relajado, con los brazos a los costados. Mire hacia la cámara.',
-                    duration: 5000,
-                    audio: 'Colóquese de pie, relajado, con los brazos a los costados. Mire hacia la cámara.',
-                    validation: 'checkBasicStance'
-                },
-                {
-                    icon: '👀',
-                    title: 'Vista Frontal',
-                    text: 'Mantenga la cabeza erguida y mire directamente a la cámara. Respiración normal.',
-                    duration: 8000,
-                    audio: 'Mantenga la cabeza erguida y mire directamente a la cámara. Respiración normal.',
-                    validation: 'checkFrontalView'
-                },
-                {
-                    icon: '💪',
-                    title: 'Brazos Naturales',
-                    text: 'Deje los brazos caer naturalmente a los costados. No fuerce la posición.',
-                    duration: 6000,
-                    audio: 'Deje los brazos caer naturalmente a los costados. No fuerce la posición.',
-                    validation: 'checkArmPosition'
-                },
-                {
-                    icon: '📸',
-                    title: 'Captura Final',
-                    text: 'Perfecto. Mantenga esta posición mientras capturamos los datos.',
-                    duration: 10000,
-                    audio: 'Perfecto. Mantenga esta posición mientras capturamos los datos.',
-                    validation: 'checkFinalCapture'
-                }
-            ],
-            rangos: [
-                {
-                    icon: '🧍',
-                    title: 'Posición Base',
-                    text: 'Colóquese en posición inicial: de pie, brazos a los costados.',
-                    duration: 4000,
-                    audio: 'Colóquese en posición inicial: de pie, brazos a los costados.',
-                    validation: 'checkBasicStance'
-                },
-                {
-                    icon: '🙋‍♀️',
-                    title: 'Elevar Brazos',
-                    text: 'Levante lentamente ambos brazos hacia los lados hasta la altura de los hombros.',
-                    duration: 8000,
-                    audio: 'Levante lentamente ambos brazos hacia los lados hasta la altura de los hombros.',
-                    validation: 'checkArmRaise'
-                },
-                {
-                    icon: '🙌',
-                    title: 'Brazos Arriba',
-                    text: 'Ahora levante los brazos completamente por encima de la cabeza.',
-                    duration: 8000,
-                    audio: 'Ahora levante los brazos completamente por encima de la cabeza.',
-                    validation: 'checkArmsUp'
-                },
-                {
-                    icon: '🔄',
-                    title: 'Rotación de Hombros',
-                    text: 'Baje los brazos y haga círculos lentos con los hombros hacia atrás.',
-                    duration: 10000,
-                    audio: 'Baje los brazos y haga círculos lentos con los hombros hacia atrás.',
-                    validation: 'checkShoulderRotation'
-                },
-                {
-                    icon: '🦵',
-                    title: 'Flexión de Cadera',
-                    text: 'Levante una pierna, flexionando la rodilla a 90 grados. Mantenga el equilibrio.',
-                    duration: 8000,
-                    audio: 'Levante una pierna, flexionando la rodilla a 90 grados. Mantenga el equilibrio.',
-                    validation: 'checkHipFlexion'
-                }
-            ],
-            simetria: [
-                {
-                    icon: '🧍',
-                    title: 'Postura Simétrica',
-                    text: 'Colóquese con los pies separados al ancho de los hombros, peso distribuido igual.',
-                    duration: 6000,
-                    audio: 'Colóquese con los pies separados al ancho de los hombros, peso distribuido igual.',
-                    validation: 'checkSymmetricStance'
-                },
-                {
-                    icon: '⚖️',
-                    title: 'Verificación de Balance',
-                    text: 'Mantenga esta posición. Vamos a analizar la simetría de sus hombros y caderas.',
-                    duration: 10000,
-                    audio: 'Mantenga esta posición. Vamos a analizar la simetría de sus hombros y caderas.',
-                    validation: 'checkBalance'
-                }
-            ],
-            completo: [
-                {
-                    icon: '🏥',
-                    title: 'Examen Completo',
-                    text: 'Realizaremos un análisis integral. Siga todas las instrucciones cuidadosamente.',
-                    duration: 5000,
-                    audio: 'Realizaremos un análisis integral. Siga todas las instrucciones cuidadosamente.',
-                    validation: 'checkReadiness'
-                }
-            ]
-        };
+        // Secuencia de examen completo con múltiples pasos
+        this.examSequence = [
+            {
+                icon: '🏥',
+                title: 'Preparación',
+                text: 'Prepárese para el examen. Colóquese de pie frente a la cámara y quédese completamente quieto.',
+                duration: 20000,
+                audio: 'Prepárese para el examen. Colóquese de pie frente a la cámara y quédese completamente quieto. Tiene 20 segundos.',
+                validation: 'checkReadiness',
+                showCountdown: true
+            },
+            {
+                icon: '🧍',
+                title: 'Posición Inicial',
+                text: 'Colóquese de pie, relajado, con los brazos a los costados. Mire hacia la cámara.',
+                duration: 8000,
+                audio: 'Colóquese de pie, relajado, con los brazos a los costados. Mire hacia la cámara.',
+                validation: 'checkBasicStance'
+            },
+            {
+                icon: '👀',
+                title: 'Vista Frontal',
+                text: 'Mantenga la cabeza erguida y mire directamente a la cámara. Respiración normal.',
+                duration: 8000,
+                audio: 'Mantenga la cabeza erguida y mire directamente a la cámara. Respiración normal.',
+                validation: 'checkFrontalView'
+            },
+            {
+                icon: '🙋‍♀️',
+                title: 'Elevar Brazos',
+                text: 'Levante lentamente ambos brazos hacia los lados hasta la altura de los hombros.',
+                duration: 10000,
+                audio: 'Levante lentamente ambos brazos hacia los lados hasta la altura de los hombros.',
+                validation: 'checkArmRaise'
+            },
+            {
+                icon: '🙌',
+                title: 'Brazos Arriba',
+                text: 'Ahora levante los brazos completamente por encima de la cabeza.',
+                duration: 10000,
+                audio: 'Ahora levante los brazos completamente por encima de la cabeza.',
+                validation: 'checkArmsUp'
+            },
+            {
+                icon: '💪',
+                title: 'Brazos Naturales',
+                text: 'Baje los brazos y déjelos caer naturalmente a los costados. No fuerce la posición.',
+                duration: 8000,
+                audio: 'Baje los brazos y déjelos caer naturalmente a los costados. No fuerce la posición.',
+                validation: 'checkArmPosition'
+            },
+            {
+                icon: '⚖️',
+                title: 'Verificación de Simetría',
+                text: 'Mantenga esta posición. Analizaremos la simetría de sus hombros y caderas.',
+                duration: 10000,
+                audio: 'Mantenga esta posición. Analizaremos la simetría de sus hombros y caderas.',
+                validation: 'checkSymmetry'
+            },
+            {
+                icon: '📸',
+                title: 'Captura Final',
+                text: 'Perfecto. Mantenga esta posición mientras capturamos los datos finales.',
+                duration: 8000,
+                audio: 'Perfecto. Mantenga esta posición mientras capturamos los datos finales.',
+                validation: 'checkFinalCapture'
+            }
+        ];
 
         // Datos del paciente conectado
         this.patientData = null;
@@ -164,6 +124,12 @@ class TelemedicineDoctor {
 
         // Landmarks recibidos
         this.receivedLandmarks = null;
+
+        // Sistema de captura estabilizada de métricas
+        this.metricsBuffer = []; // Buffer circular para promediar métricas
+        this.bufferSize = 30; // 30 frames (~1 segundo a 30 FPS)
+        this.capturedMetrics = null; // Métricas capturadas y estabilizadas para el reporte
+        this.isStabilizing = false; // Flag para indicar que estamos estabilizando
 
         // WebRTC configuration
         this.peerConnection = null;
@@ -201,8 +167,6 @@ class TelemedicineDoctor {
     initializeDOMElements() {
         // Elementos de configuración del médico
         this.doctorNameInput = document.getElementById('doctorName');
-        this.doctorSpecialtySelect = document.getElementById('doctorSpecialty');
-        this.examTypeSelect = document.getElementById('examType');
         this.createSessionBtn = document.getElementById('createSessionBtn');
 
         // Elementos de sesión
@@ -259,20 +223,26 @@ class TelemedicineDoctor {
     }
 
     setupEventListeners() {
+        console.log('🔧 Configurando event listeners...');
+        console.log('   - startGuidedBtn existe:', !!this.startGuidedBtn);
+
         // Crear sesión
         this.createSessionBtn.addEventListener('click', () => this.createSession());
 
         // Controles de examen
         this.startExamBtn.addEventListener('click', () => this.startExam());
-        this.startGuidedBtn.addEventListener('click', () => this.startGuidedSequence());
+
+        if (this.startGuidedBtn) {
+            this.startGuidedBtn.addEventListener('click', () => {
+                console.log('🖱️ Click detectado en startGuidedBtn');
+                this.startGuidedSequence();
+            });
+        } else {
+            console.error('❌ startGuidedBtn no encontrado en el DOM');
+        }
+
         this.stopExamBtn.addEventListener('click', () => this.stopExam());
         this.countdownBtn.addEventListener('click', () => this.startCountdown());
-
-        // Selección de tipo de examen
-        this.examTypeSelect.addEventListener('change', (e) => {
-            this.currentExamType = e.target.value;
-            console.log(`🔍 Tipo de examen cambiado a: ${this.currentExamType}`);
-        });
 
         // Instrucciones
         this.sendInstructionBtn.addEventListener('click', () => this.sendCustomInstruction());
@@ -344,11 +314,6 @@ class TelemedicineDoctor {
 
         // Datos de pose recibidos
         this.socket.on('receive-pose-data', ({ landmarks, metrics, timestamp }) => {
-            console.log('📥 Datos de pose recibidos:', {
-                landmarksCount: landmarks?.length || 0,
-                hasMetrics: !!metrics,
-                timestamp: timestamp
-            });
             this.handlePoseData(landmarks, metrics, timestamp);
         });
 
@@ -490,7 +455,6 @@ class TelemedicineDoctor {
 
     createSession() {
         const doctorName = this.doctorNameInput.value.trim();
-        const specialty = this.doctorSpecialtySelect.value;
 
         if (!doctorName) {
             alert('Por favor ingrese su nombre');
@@ -499,7 +463,6 @@ class TelemedicineDoctor {
 
         this.doctorData = {
             name: doctorName,
-            specialty: specialty,
             sessionId: Date.now()
         };
 
@@ -557,22 +520,26 @@ class TelemedicineDoctor {
     }
 
     startGuidedSequence() {
-        if (!this.patientConnected) return;
+        console.log('🔘 Botón Examen Guiado presionado');
+        console.log('   - Paciente conectado:', this.patientConnected);
 
-        console.log(`🎯 Iniciando secuencia guiada de tipo: ${this.currentExamType}`);
+        if (!this.patientConnected) {
+            console.log('❌ No se puede iniciar: paciente no conectado');
+            return;
+        }
+
+        console.log(`🎯 Iniciando examen guiado completo`);
 
         // Resetear sistema de instrucciones
         this.instructionSystem.currentStep = 0;
         this.instructionSystem.isActive = true;
 
-        const sequence = this.examSequences[this.currentExamType] || this.examSequences.completo;
-
         // Enviar primera instrucción al paciente
         this.sendCommand('start_guided_sequence', {
-            examType: this.currentExamType,
-            totalSteps: sequence.length,
+            examType: 'completo',
+            totalSteps: this.examSequence.length,
             currentStep: 0,
-            instruction: sequence[0]
+            instruction: this.examSequence[0]
         });
 
         // Actualizar estado
@@ -582,10 +549,10 @@ class TelemedicineDoctor {
         this.stopExamBtn.disabled = false;
         this.captureBtn.disabled = false;
 
-        this.updateConnectionStatus(`🎯 Secuencia guiada ${this.currentExamType} iniciada`, 'examining');
+        this.updateConnectionStatus(`🎯 Examen guiado en progreso`, 'examining');
 
         // Programar siguiente paso
-        this.scheduleNextInstruction(sequence[0].duration);
+        this.scheduleNextInstruction(this.examSequence[0].duration);
     }
 
     scheduleNextInstruction(duration) {
@@ -599,18 +566,17 @@ class TelemedicineDoctor {
     nextGuidedStep() {
         if (!this.instructionSystem.isActive) return;
 
-        const sequence = this.examSequences[this.currentExamType] || this.examSequences.completo;
         this.instructionSystem.currentStep++;
 
-        if (this.instructionSystem.currentStep >= sequence.length) {
+        if (this.instructionSystem.currentStep >= this.examSequence.length) {
             this.completeGuidedSequence();
         } else {
-            const currentInstruction = sequence[this.instructionSystem.currentStep];
+            const currentInstruction = this.examSequence[this.instructionSystem.currentStep];
 
             // Enviar siguiente instrucción
             this.sendCommand('next_guided_step', {
-                examType: this.currentExamType,
-                totalSteps: sequence.length,
+                examType: 'completo',
+                totalSteps: this.examSequence.length,
                 currentStep: this.instructionSystem.currentStep,
                 instruction: currentInstruction
             });
@@ -621,7 +587,7 @@ class TelemedicineDoctor {
     }
 
     completeGuidedSequence() {
-        console.log('✅ Secuencia guiada completada');
+        console.log('✅ Examen guiado completado');
 
         this.instructionSystem.isActive = false;
 
@@ -631,16 +597,88 @@ class TelemedicineDoctor {
 
         // Notificar al paciente
         this.sendCommand('complete_guided_sequence', {
-            examType: this.currentExamType,
-            message: 'Secuencia completada - Excelente trabajo'
+            examType: 'completo',
+            message: 'Examen completado - Excelente trabajo'
         });
 
-        this.updateConnectionStatus('✅ Secuencia guiada completada - Analizando datos', 'connected');
+        this.updateConnectionStatus('✅ Examen completado - Estabilizando métricas...', 'connected');
 
-        // Capturar automáticamente al completar
+        // Estabilizar métricas antes de capturar
+        this.isStabilizing = true;
+
+        // Esperar 1 segundo para acumular frames estables, luego capturar
+        setTimeout(() => {
+            this.stabilizeAndCaptureMetrics();
+        }, 1000);
+    }
+
+    stabilizeAndCaptureMetrics() {
+        if (this.metricsBuffer.length < 10) {
+            console.warn('⚠️ Buffer insuficiente para estabilizar, usando métricas actuales');
+            this.capturedMetrics = JSON.parse(JSON.stringify(this.currentMetrics));
+        } else {
+            console.log(`📊 Estabilizando métricas de ${this.metricsBuffer.length} frames`);
+            this.capturedMetrics = this.calculateStabilizedMetrics();
+        }
+
+        this.isStabilizing = false;
+        this.updateConnectionStatus('✅ Métricas estabilizadas - Datos listos', 'connected');
+
+        // Capturar snapshot con métricas estabilizadas
         setTimeout(() => {
             this.captureSnapshot();
-        }, 2000);
+        }, 500);
+    }
+
+    calculateStabilizedMetrics() {
+        const bufferLength = this.metricsBuffer.length;
+
+        // Inicializar acumuladores
+        const stabilized = {
+            posture: {
+                cervicalAlignment: 0,
+                pelvicTilt: 0,
+                lateralDeviation: 0
+            },
+            joints: {
+                rightShoulderAngle: 0,
+                leftShoulderAngle: 0,
+                rightHipAngle: 0,
+                leftHipAngle: 0
+            },
+            symmetry: {
+                shoulderSymmetry: 0,
+                hipSymmetry: 0,
+                overallBalance: 0
+            }
+        };
+
+        // Sumar todos los valores
+        this.metricsBuffer.forEach(item => {
+            const m = item.metrics;
+            stabilized.posture.cervicalAlignment += m.posture.cervicalAlignment || 0;
+            stabilized.posture.pelvicTilt += m.posture.pelvicTilt || 0;
+            stabilized.posture.lateralDeviation += m.posture.lateralDeviation || 0;
+
+            stabilized.joints.rightShoulderAngle += m.joints.rightShoulderAngle || 0;
+            stabilized.joints.leftShoulderAngle += m.joints.leftShoulderAngle || 0;
+            stabilized.joints.rightHipAngle += m.joints.rightHipAngle || 0;
+            stabilized.joints.leftHipAngle += m.joints.leftHipAngle || 0;
+
+            stabilized.symmetry.shoulderSymmetry += m.symmetry.shoulderSymmetry || 0;
+            stabilized.symmetry.hipSymmetry += m.symmetry.hipSymmetry || 0;
+            stabilized.symmetry.overallBalance += m.symmetry.overallBalance || 0;
+        });
+
+        // Calcular promedios
+        Object.keys(stabilized).forEach(category => {
+            Object.keys(stabilized[category]).forEach(metric => {
+                stabilized[category][metric] /= bufferLength;
+            });
+        });
+
+        console.log('📈 Métricas estabilizadas (promedio de', bufferLength, 'frames):', stabilized);
+        return stabilized;
     }
 
     sendCustomInstruction() {
@@ -675,19 +713,31 @@ class TelemedicineDoctor {
     captureSnapshot() {
         if (!this.patientConnected || !this.receivedLandmarks) return;
 
-        console.log('📸 Capturando snapshot médico...');
+        // Usar métricas estabilizadas si están disponibles, sino usar actuales
+        const metricsToUse = this.capturedMetrics || this.currentMetrics;
+        const metricsSource = this.capturedMetrics ? 'estabilizadas' : 'instantáneas';
+
+        console.log(`📸 Capturando snapshot médico con métricas ${metricsSource}...`);
 
         const snapshot = {
             id: Date.now(),
             timestamp: new Date().toISOString(),
             patientData: this.patientData,
             landmarks: this.receivedLandmarks,
-            metrics: { ...this.currentMetrics },
+            metrics: JSON.parse(JSON.stringify(metricsToUse)),
+            metricsSource: metricsSource, // Indicar el origen de las métricas
             notes: this.doctorNotes.value || '',
             doctorData: this.doctorData
         };
 
         this.snapshots.push(snapshot);
+
+        console.log('📊 Snapshot capturado:', {
+            id: snapshot.id,
+            metricsSource: snapshot.metricsSource,
+            cervical: snapshot.metrics.posture.cervicalAlignment?.toFixed(1),
+            pelvic: snapshot.metrics.posture.pelvicTilt?.toFixed(1)
+        });
 
         // Enviar comando de captura al paciente
         this.sendCommand('capture_snapshot', {
@@ -705,6 +755,17 @@ class TelemedicineDoctor {
         // Guardar datos recibidos
         this.receivedLandmarks = landmarks;
         this.currentMetrics = metrics;
+
+        // Agregar métricas al buffer para estabilización
+        this.metricsBuffer.push({
+            timestamp: timestamp,
+            metrics: JSON.parse(JSON.stringify(metrics)) // Deep copy
+        });
+
+        // Mantener buffer en tamaño máximo (buffer circular)
+        if (this.metricsBuffer.length > this.bufferSize) {
+            this.metricsBuffer.shift(); // Remover el más antiguo
+        }
 
         // Actualizar estadísticas de transmisión
         this.updateTransmissionStats(timestamp);
@@ -927,20 +988,31 @@ class TelemedicineDoctor {
     generateReport() {
         console.log('📄 Generando informe médico...');
 
+        // Usar métricas estabilizadas si están disponibles
+        const metricsToUse = this.capturedMetrics || this.currentMetrics;
+        const metricsSource = this.capturedMetrics ? 'estabilizadas (promediadas)' : 'instantáneas';
+
         const report = {
             sessionInfo: {
                 sessionCode: this.sessionCode,
                 date: new Date().toLocaleDateString('es-ES'),
                 time: new Date().toLocaleTimeString('es-ES'),
-                duration: 'Calculando...'
+                duration: 'Calculando...',
+                metricsSource: metricsSource // Indicar origen de métricas en reporte
             },
             doctorInfo: this.doctorData,
             patientInfo: this.patientData,
-            currentMetrics: this.currentMetrics,
+            currentMetrics: metricsToUse,
             snapshots: this.snapshots,
             doctorNotes: this.doctorNotes.value || '',
-            recommendations: this.generateRecommendations()
+            recommendations: this.generateRecommendations(metricsToUse)
         };
+
+        console.log(`📊 Reporte con métricas ${metricsSource}:`, {
+            cervical: report.currentMetrics.posture.cervicalAlignment?.toFixed(1),
+            pelvic: report.currentMetrics.posture.pelvicTilt?.toFixed(1),
+            lateral: report.currentMetrics.posture.lateralDeviation?.toFixed(1)
+        });
 
         // Crear y descargar archivo JSON
         const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
@@ -953,66 +1025,59 @@ class TelemedicineDoctor {
         console.log('✅ Informe generado');
     }
 
-    generateRecommendations() {
+    generateRecommendations(metrics = null) {
         const recommendations = [];
-        const metrics = this.currentMetrics;
+        const metricsToUse = metrics || this.capturedMetrics || this.currentMetrics;
 
         // Recomendaciones basadas en alineación cervical
-        if (metrics.posture.cervicalAlignment > 15) {
+        if (metricsToUse.posture.cervicalAlignment > 15) {
             recommendations.push('🔸 Considerar evaluación de postura cervical - desviación significativa detectada');
             recommendations.push('📋 Recomendaciones: Ejercicios de fortalecimiento cervical y corrección postural');
-        } else if (metrics.posture.cervicalAlignment > 10) {
+        } else if (metricsToUse.posture.cervicalAlignment > 10) {
             recommendations.push('⚠️ Alineación cervical en límite superior - monitorear evolución');
         }
 
         // Recomendaciones basadas en inclinación pélvica
-        if (metrics.posture.pelvicTilt > 5) {
+        if (metricsToUse.posture.pelvicTilt > 5) {
             recommendations.push('🔸 Revisar alineación pélvica - inclinación fuera del rango normal');
             recommendations.push('📋 Recomendaciones: Ejercicios de estabilización pélvica y fortalecimiento del core');
         }
 
         // Recomendaciones basadas en desviación lateral
-        if (metrics.posture.lateralDeviation > 30) {
+        if (metricsToUse.posture.lateralDeviation > 30) {
             recommendations.push('🔸 Desviación lateral significativa - requiere atención médica');
             recommendations.push('📋 Recomendaciones: Evaluación ortopédica para descartar escoliosis o desequilibrios musculares');
-        } else if (metrics.posture.lateralDeviation > 20) {
+        } else if (metricsToUse.posture.lateralDeviation > 20) {
             recommendations.push('⚠️ Desviación lateral moderada - ejercicios de corrección recomendados');
         }
 
         // Recomendaciones basadas en simetría
-        if (metrics.symmetry.shoulderSymmetry < 85) {
+        if (metricsToUse.symmetry.shoulderSymmetry < 85) {
             recommendations.push('🔸 Asimetría en hombros detectada - considerar evaluación ortopédica');
             recommendations.push('📋 Recomendaciones: Ejercicios de equilibrio muscular y estiramiento específico');
         }
 
-        if (metrics.symmetry.hipSymmetry < 85) {
+        if (metricsToUse.symmetry.hipSymmetry < 85) {
             recommendations.push('🔸 Asimetría en caderas detectada - evaluación de longitud de miembros');
             recommendations.push('📋 Recomendaciones: Análisis biomecánico y corrección de desequilibrios');
         }
 
-        if (metrics.symmetry.overallBalance < 80) {
+        if (metricsToUse.symmetry.overallBalance < 80) {
             recommendations.push('🔸 Desequilibrio postural general - recomendable fisioterapia postural');
             recommendations.push('📋 Recomendaciones: Programa integral de reeducación postural');
-        } else if (metrics.symmetry.overallBalance < 90) {
+        } else if (metricsToUse.symmetry.overallBalance < 90) {
             recommendations.push('⚠️ Balance postural mejorable - ejercicios de propriocepción recomendados');
         }
 
         // Recomendaciones basadas en ángulos articulares
-        if (metrics.joints.rightShoulderAngle < 160 || metrics.joints.leftShoulderAngle < 160) {
+        if (metricsToUse.joints.rightShoulderAngle < 160 || metricsToUse.joints.leftShoulderAngle < 160) {
             recommendations.push('🔸 Limitación en rango articular de hombros - evaluación de movilidad');
             recommendations.push('📋 Recomendaciones: Ejercicios de movilización y estiramiento específico');
         }
 
-        if (metrics.joints.rightHipAngle < 170 || metrics.joints.leftHipAngle < 170) {
+        if (metricsToUse.joints.rightHipAngle < 170 || metricsToUse.joints.leftHipAngle < 170) {
             recommendations.push('🔸 Posible limitación en extensión de cadera - evaluación funcional');
             recommendations.push('📋 Recomendaciones: Ejercicios de flexibilidad y fortalecimiento de caderas');
-        }
-
-        // Recomendaciones específicas por tipo de examen
-        if (this.currentExamType === 'rangos') {
-            recommendations.push('📋 Evaluación de rangos de movimiento: Considerar análisis biomecánico completo');
-        } else if (this.currentExamType === 'simetria') {
-            recommendations.push('📋 Análisis de simetría: Monitorear evolución y considerar corrección postural');
         }
 
         // Si no hay problemas detectados
@@ -1092,6 +1157,13 @@ class TelemedicineDoctor {
     updateConnectionStatus(message, type) {
         this.connectionStatus.textContent = message;
         this.connectionStatus.className = `connection-status status-${type}`;
+
+        // Mostrar solo cuando hay mensaje relevante
+        if (message && message.trim() !== '') {
+            this.connectionStatus.classList.remove('hidden');
+        } else {
+            this.connectionStatus.classList.add('hidden');
+        }
     }
 }
 

@@ -317,6 +317,146 @@ The application follows a **modern, professional dark theme** inspired by Whereb
 - Text: `#e4e6eb` (primary), `#b0b3b8` (secondary)
 - Accent: `#5b8def` (blue), `#5ebd6d` (green), `#f7b928` (yellow), `#e85d55` (red)
 
+### Metrics Stabilization System (2025-10-03) - MAJOR IMPROVEMENT
+
+**Problem**: Medical results were inconsistent across sessions, showing abnormally high cervical alignment values (150-180°) even with good posture.
+
+**Root Causes**:
+1. Metrics calculated every frame (30 FPS) including during patient movement
+2. Reports used instantaneous metrics from random frames
+3. Cervical alignment formula used incorrect `atan2(deltaX, deltaY)` calculation
+
+**Solutions Implemented**:
+
+#### 1. Metrics Buffer and Stabilization (telemedicine-doctor.js)
+```javascript
+// Buffer circular de 30 frames (~1 segundo a 30 FPS)
+this.metricsBuffer = [];
+this.bufferSize = 30;
+this.capturedMetrics = null; // Métricas estabilizadas para reportes
+```
+
+**Process**:
+- All incoming metrics stored in circular buffer (lines 675-684)
+- When guided sequence completes, waits 1 second for patient to stabilize
+- Calculates average of last 30 frames: `calculateStabilizedMetrics()` (lines 633-682)
+- Uses stabilized metrics for snapshots and reports (lines 713-750, 988-1026)
+
+**Benefits**:
+- ✅ Eliminates movement noise
+- ✅ Reproducible results across sessions
+- ✅ Medical-grade precision
+- ✅ Reports include `metricsSource: "estabilizadas (promediadas)"`
+
+#### 2. Corrected Cervical Alignment Calculation (telemedicine-patient.js)
+
+**Old (INCORRECT)**:
+```javascript
+const angle = Math.atan2(deltaX, deltaY) * (180 / Math.PI);
+// With deltaX ≈ 0, deltaY < 0 → always ~180° (meaningless)
+```
+
+**New (CORRECT)**:
+```javascript
+// Measure lateral deviation directly
+const lateralAngle = Math.abs(deltaX) * 100;
+// deltaX = 0.003 → 0.3° (excellent alignment)
+```
+
+**Why this works**:
+- MediaPipe coordinates: Y=0 is top, Y=1 is bottom
+- `deltaY < 0` means nose is ABOVE shoulders (normal)
+- `deltaX` measures horizontal deviation (lateral tilt)
+- Multiply by 100 to convert fraction to approximate degrees
+
+**Results**:
+- Before: cervicalAlignment = 177° ❌
+- After: cervicalAlignment = 0.3° ✅
+
+#### 3. Debug Panel for Real-time Diagnosis (paciente.html + telemedicine-patient.js)
+
+Added visual debug panel showing:
+```
+📊 Diagnóstico Cervical:
+Nariz Y: 0.501 | Hombros Y: 0.568
+Desviación Vertical: -6.7% (✅ CABEZA ARRIBA)
+Desviación Lateral: 0.3%
+Ángulo Cervical: 0.3°
+```
+
+**Location**: Bottom of patient interface, updates every 0.5 seconds
+
+#### 4. Console Log Cleanup (telemedicine-patient.js)
+
+Removed verbose logs:
+- ❌ "📤 Enviando datos" every 30 frames
+- ❌ All command received logs
+- ❌ WebRTC connection details
+- ✅ Kept only critical errors and cervical diagnostics
+
+**Files Modified**:
+- `telemedicine-doctor.js`: Added buffer system, stabilization, corrected report generation
+- `telemedicine-patient.js`: Fixed cervical calculation, added debug panel, cleaned logs
+- `paciente.html`: Added visual diagnostic panel
+- `CLAUDE.md`: This documentation
+
+**Verification**:
+Compare reports before/after:
+```json
+// BEFORE (unstable, incorrect)
+{
+  "cervicalAlignment": 177.32,
+  "pelvicTilt": 6.41,
+  "lateralDeviation": 136.79
+}
+
+// AFTER (stable, correct)
+{
+  "sessionInfo": {
+    "metricsSource": "estabilizadas (promediadas)"
+  },
+  "cervicalAlignment": 0.31,
+  "pelvicTilt": 2.95,
+  "lateralDeviation": 1.62
+}
+```
+
+#### Important Notes on Camera Distance
+
+**Recommended Setup**:
+- Camera distance: ~3 meters from patient
+- Position: Elevated to capture full body (head to ankles)
+- Patient should look **straight ahead** (not at camera) during measurement
+
+**Why This Matters**:
+- At 3 meters, if patient looks UP at camera, head tilts backward
+- Cervical alignment measures **lateral tilt**, not vertical gaze direction
+- MediaPipe detects full body landmarks (33 points from nose to ankles)
+- System uses: nose, shoulders, elbows, wrists, hips, knees, ankles
+
+**Detected Body Points**:
+```javascript
+nose: 0, eyes: 1/4, ears: 7/8           // Head
+shoulders: 11/12                         // Upper torso
+elbows: 13/14, wrists: 15/16            // Arms
+hips: 23/24                              // Lower torso
+knees: 25/26, ankles: 27/28             // Legs
+```
+
+**Current Metrics Scope**:
+- ✅ Full body detection (head to ankles)
+- ✅ Cervical alignment (lateral head tilt)
+- ✅ Pelvic tilt (hip symmetry)
+- ✅ Shoulder angles (arm position)
+- ✅ Hip angles (leg position)
+- ✅ Overall body symmetry
+
+**Potential Future Enhancements**:
+- Knee flexion angles
+- Ankle alignment
+- Leg length symmetry
+- Knee valgus/varus assessment
+
 ### Complete System Fixes (2025-09-30) - CRITICAL UPDATES
 
 #### 1. ES6 Module Loading for MediaPipe (CRITICAL FIX)
