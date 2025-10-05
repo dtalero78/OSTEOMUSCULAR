@@ -109,6 +109,11 @@ class TelemedicinePatient {
         this.videoPlaceholder = document.getElementById('videoPlaceholder');
         this.countdownOverlay = document.getElementById('countdownOverlay');
 
+        // Canvas de análisis separado
+        this.analysisCanvas = document.getElementById('analysisCanvas');
+        this.analysisCtx = this.analysisCanvas ? this.analysisCanvas.getContext('2d') : null;
+        this.analysisPlaceholder = document.getElementById('analysisPlaceholder');
+
         // Elementos de interfaz
         this.doctorInstructions = document.getElementById('doctorInstructions');
 
@@ -335,11 +340,19 @@ class TelemedicinePatient {
                 this.canvas.width = this.video.videoWidth;
                 this.canvas.height = this.video.videoHeight;
 
+                // También configurar canvas de análisis
+                if (this.analysisCanvas) {
+                    this.analysisCanvas.width = this.video.videoWidth;
+                    this.analysisCanvas.height = this.video.videoHeight;
+                    console.log('📐 Canvas de análisis configurado:', this.analysisCanvas.width, 'x', this.analysisCanvas.height);
+                }
+
                 // WebRTC se iniciará cuando el servidor envíe 'doctor-ready-for-webrtc'
                 this.startTransmission();
             };
 
             await this.video.play();
+            console.log('✅ Cámara y canvas iniciados correctamente');
 
         } catch (error) {
             console.error('❌ Error accediendo a la cámara:', error);
@@ -462,10 +475,12 @@ class TelemedicinePatient {
     }
 
     drawPoseLandmarks(landmarks) {
-        // Ocultar mensaje de "esperando análisis" cuando se detectan landmarks
-        const noAnalysisMessage = document.getElementById('noAnalysisMessage');
-        if (noAnalysisMessage && noAnalysisMessage.style.display !== 'none') {
-            noAnalysisMessage.style.display = 'none';
+        // Ocultar placeholder de análisis y mostrar canvas
+        if (this.analysisPlaceholder && this.analysisPlaceholder.style.display !== 'none') {
+            this.analysisPlaceholder.style.display = 'none';
+        }
+        if (this.analysisCanvas && this.analysisCanvas.style.display !== 'block') {
+            this.analysisCanvas.style.display = 'block';
         }
 
         const pointRadius = 4;
@@ -487,41 +502,59 @@ class TelemedicinePatient {
             [this.landmarkIndices.rightKnee, this.landmarkIndices.rightAnkle]
         ];
 
-        // Dibujar conexiones
-        this.ctx.strokeStyle = '#00ff00';
-        this.ctx.lineWidth = lineWidth;
-        this.ctx.beginPath();
+        // Dibujar en AMBOS canvas: overlay transparente Y canvas de análisis
+        const canvasList = [
+            { canvas: this.canvas, ctx: this.ctx, color: '#00ff00', pointColor: '#ff0000', bgClear: true },
+            { canvas: this.analysisCanvas, ctx: this.analysisCtx, color: '#00ff00', pointColor: '#ff0000', bgClear: false }
+        ];
 
-        connections.forEach(([start, end]) => {
-            const startPoint = landmarks[start];
-            const endPoint = landmarks[end];
+        canvasList.forEach(({ canvas, ctx, color, pointColor, bgClear }) => {
+            if (!canvas || !ctx) return;
 
-            if (startPoint && endPoint) {
-                this.ctx.moveTo(startPoint.x * this.canvas.width, startPoint.y * this.canvas.height);
-                this.ctx.lineTo(endPoint.x * this.canvas.width, endPoint.y * this.canvas.height);
-            }
-        });
-
-        this.ctx.stroke();
-
-        // Dibujar puntos
-        landmarks.forEach((landmark, index) => {
-            const x = landmark.x * this.canvas.width;
-            const y = landmark.y * this.canvas.height;
-
-            let color = '#00ff00';
-            if (Object.values(this.landmarkIndices).includes(index)) {
-                color = '#ff0000';
+            // Limpiar o dejar fondo negro
+            if (bgClear) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            this.ctx.fillStyle = color;
-            this.ctx.beginPath();
-            this.ctx.arc(x, y, pointRadius, 0, 2 * Math.PI);
-            this.ctx.fill();
+            // Dibujar conexiones
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.beginPath();
 
-            this.ctx.strokeStyle = '#ffffff';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
+            connections.forEach(([start, end]) => {
+                const startPoint = landmarks[start];
+                const endPoint = landmarks[end];
+
+                if (startPoint && endPoint) {
+                    ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+                    ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+                }
+            });
+
+            ctx.stroke();
+
+            // Dibujar puntos
+            landmarks.forEach((landmark, index) => {
+                const x = landmark.x * canvas.width;
+                const y = landmark.y * canvas.height;
+
+                let currentColor = color;
+                if (Object.values(this.landmarkIndices).includes(index)) {
+                    currentColor = pointColor;
+                }
+
+                ctx.fillStyle = currentColor;
+                ctx.beginPath();
+                ctx.arc(x, y, pointRadius, 0, 2 * Math.PI);
+                ctx.fill();
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
         });
     }
 
@@ -811,21 +844,33 @@ class TelemedicinePatient {
             return;
         }
 
-        this.speechSynthesis.cancel();
+        // Función para reproducir con voces cargadas
+        const playWithVoices = () => {
+            this.speechSynthesis.cancel();
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'es-ES';
-        utterance.rate = 0.9;
-        utterance.pitch = 1.0;
-        utterance.volume = 0.8;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'es-ES';
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0; // Volumen máximo
 
+            const voices = this.speechSynthesis.getVoices();
+            const spanishVoice = voices.find(voice => voice.lang.includes('es')) || voices[0];
+            if (spanishVoice) {
+                utterance.voice = spanishVoice;
+            }
+
+            console.log(`🔊 Reproduciendo: "${text}" con voz ${spanishVoice?.name || 'default'}`);
+            this.speechSynthesis.speak(utterance);
+        };
+
+        // Cargar voces si no están listas
         const voices = this.speechSynthesis.getVoices();
-        const spanishVoice = voices.find(voice => voice.lang.includes('es'));
-        if (spanishVoice) {
-            utterance.voice = spanishVoice;
+        if (voices.length === 0) {
+            this.speechSynthesis.addEventListener('voiceschanged', playWithVoices, { once: true });
+        } else {
+            playWithVoices();
         }
-
-        this.speechSynthesis.speak(utterance);
     }
 
     activateAudio() {
