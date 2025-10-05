@@ -481,6 +481,12 @@ class TelemedicinePatient {
         }
         if (this.analysisCanvas && this.analysisCanvas.style.display !== 'block') {
             this.analysisCanvas.style.display = 'block';
+            // Log para iOS debugging
+            console.log('📱 Canvas de análisis mostrado:', {
+                width: this.analysisCanvas.width,
+                height: this.analysisCanvas.height,
+                display: this.analysisCanvas.style.display
+            });
         }
 
         const pointRadius = 4;
@@ -874,34 +880,62 @@ class TelemedicinePatient {
     }
 
     activateAudio() {
-        console.log('🔊 Activando audio por interacción del usuario...');
+        console.log('🔊 Activando audio por interacción del usuario (iOS compatible)...');
 
-        // Test de speech synthesis para "desbloquear" en móviles
-        const testUtterance = new SpeechSynthesisUtterance('Audio activado');
-        testUtterance.lang = 'es-ES';
-        testUtterance.volume = 0.8;
+        // Función para reproducir con voces cargadas (iOS requiere esto)
+        const activateWithVoices = () => {
+            // Cancelar cualquier utterance anterior
+            this.speechSynthesis.cancel();
 
-        this.speechSynthesis.speak(testUtterance);
+            // Test de speech synthesis para "desbloquear" en iOS
+            const testUtterance = new SpeechSynthesisUtterance('Audio activado');
+            testUtterance.lang = 'es-ES';
+            testUtterance.volume = 1.0; // Volumen máximo
+            testUtterance.rate = 1.0;
 
-        // Marcar como activado
-        this.audioActivated = true;
-
-        // Actualizar UI del botón
-        if (this.activateAudioBtn) {
-            this.activateAudioBtn.textContent = '✅ Audio Activado';
-            this.activateAudioBtn.classList.add('activated');
-            this.activateAudioBtn.disabled = true;
-        }
-
-        // Ocultar panel después de 2 segundos
-        setTimeout(() => {
-            if (this.audioActivationPanel) {
-                this.audioActivationPanel.style.display = 'none';
+            const voices = this.speechSynthesis.getVoices();
+            const spanishVoice = voices.find(voice => voice.lang.includes('es')) || voices[0];
+            if (spanishVoice) {
+                testUtterance.voice = spanishVoice;
+                console.log('🎤 Usando voz:', spanishVoice.name);
             }
-        }, 2000);
 
-        console.log('✅ Audio activado exitosamente');
-        this.showMessage('🔊 Audio de instrucciones activado');
+            // Reproducir el test utterance
+            this.speechSynthesis.speak(testUtterance);
+
+            // Marcar como activado
+            this.audioActivated = true;
+
+            // Actualizar UI del botón
+            if (this.activateAudioBtn) {
+                this.activateAudioBtn.textContent = '✅ Audio Activado';
+                this.activateAudioBtn.classList.add('activated');
+                this.activateAudioBtn.disabled = true;
+            }
+
+            // Ocultar panel después de 2 segundos
+            setTimeout(() => {
+                if (this.audioActivationPanel) {
+                    this.audioActivationPanel.style.display = 'none';
+                }
+            }, 2000);
+
+            console.log('✅ Audio activado exitosamente');
+            this.showMessage('🔊 Audio de instrucciones activado');
+        };
+
+        // Cargar voces si no están listas (iOS Safari)
+        const voices = this.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+            console.log('⏳ Esperando carga de voces en iOS...');
+            this.speechSynthesis.addEventListener('voiceschanged', activateWithVoices, { once: true });
+
+            // Forzar carga de voces en iOS (workaround)
+            const dummyUtterance = new SpeechSynthesisUtterance('');
+            this.speechSynthesis.speak(dummyUtterance);
+        } else {
+            activateWithVoices();
+        }
     }
 
     showMessage(message, duration = 3000) {
