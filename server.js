@@ -24,6 +24,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
+app.use('/audio', express.static(path.join(__dirname, 'public', 'audio')));
 
 // Almacenar sessiones activas
 const activeSessions = new Map();
