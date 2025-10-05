@@ -611,13 +611,13 @@ class TelemedicinePatient {
         // Un desplazamiento de 0.1 (10% del ancho) ≈ 5-10 grados de inclinación
         const lateralAngle = Math.abs(deltaX) * 100; // Convertir a grados aproximados
 
-        // DEBUG: Actualizar panel visual cada 15 frames (~0.5 segundos)
-        if (!this._cervicalDebugCounter) this._cervicalDebugCounter = 0;
-        this._cervicalDebugCounter++;
+        // DEBUG: Actualizar panel visual solo si existe (modo ?debug)
+        const debugPanel = document.getElementById('cervicalDebugData');
+        if (debugPanel) {
+            if (!this._cervicalDebugCounter) this._cervicalDebugCounter = 0;
+            this._cervicalDebugCounter++;
 
-        if (this._cervicalDebugCounter % 15 === 0) {
-            const debugPanel = document.getElementById('cervicalDebugData');
-            if (debugPanel) {
+            if (this._cervicalDebugCounter % 15 === 0) {
                 const verticalStatus = deltaY < 0 ? '✅ CABEZA ARRIBA' :
                                       deltaY > 0 ? '⚠️ CABEZA ABAJO' :
                                       '⚠️ NIVEL CON HOMBROS';
@@ -628,17 +628,6 @@ class TelemedicinePatient {
                     Desviación Lateral: ${(Math.abs(deltaX) * 100).toFixed(1)}%<br>
                     Ángulo Cervical: <span style="color: ${lateralAngle > 15 ? '#e85d55' : lateralAngle > 10 ? '#f7b928' : '#5ebd6d'}; font-weight: 700;">${lateralAngle.toFixed(1)}°</span>
                 `;
-
-                // También log en consola cada 60 frames para debugging
-                if (this._cervicalDebugCounter % 60 === 0) {
-                    console.log('🔍 Diagnóstico Cervical CORREGIDO:', {
-                        nose_y: nose.y.toFixed(4),
-                        shoulder_mid_y: shoulderMidpoint.y.toFixed(4),
-                        deltaY_percent: (deltaY * 100).toFixed(2) + '%',
-                        deltaX_percent: (deltaX * 100).toFixed(2) + '%',
-                        lateral_angle: lateralAngle.toFixed(2) + '°'
-                    });
-                }
             }
         }
 
@@ -967,6 +956,12 @@ class TelemedicinePatient {
     showExamScreen() {
         this.loginScreen.style.display = 'none';
         this.examScreen.style.display = 'block';
+
+        // Mostrar panel de activación de audio en móviles al conectarse
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile && !this.audioActivated && this.audioActivationPanel) {
+            this.audioActivationPanel.style.display = 'block';
+        }
     }
 
     showLoginScreen() {
