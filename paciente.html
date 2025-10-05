@@ -466,21 +466,251 @@
             display: none !important;
         }
 
-        /* Responsive */
+        /* ============================================
+           RESPONSIVE MOBILE - OPTIMIZADO
+        ============================================ */
         @media (max-width: 768px) {
-            .exam-content {
-                grid-template-columns: 1fr;
+            /* Login Screen Mobile */
+            #loginScreen {
+                padding: 16px;
+                align-items: flex-start;
+                padding-top: 40px;
+            }
+
+            .login-card {
+                padding: 24px;
+                border-radius: 12px;
+            }
+
+            .login-header h1 {
+                font-size: 20px;
+            }
+
+            .login-header p {
+                font-size: 13px;
+            }
+
+            .form-group {
+                margin-bottom: 16px;
+            }
+
+            .form-group input {
+                padding: 14px 16px;
+                font-size: 16px; /* Evita zoom en iOS */
+            }
+
+            .session-code-input {
+                font-size: 24px !important;
+                letter-spacing: 6px;
+                padding: 16px !important;
+            }
+
+            .btn-connect {
+                padding: 16px;
+                font-size: 16px;
+                border-radius: 10px;
+            }
+
+            /* Exam Screen Mobile */
+            #examScreen {
+                padding: 12px;
             }
 
             .exam-header {
+                padding: 16px;
+                border-radius: 10px;
+                margin-bottom: 12px;
+            }
+
+            .exam-header-left h1 {
+                font-size: 18px;
+            }
+
+            .exam-header-left p {
+                font-size: 12px;
+            }
+
+            .status-badge {
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+
+            .btn-disconnect {
+                font-size: 12px;
+                padding: 8px 14px;
+            }
+
+            /* Grid Mobile - Una columna */
+            .exam-content {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            /* Video Cards Mobile */
+            .video-card {
+                border-radius: 10px;
+            }
+
+            .video-card-header {
+                padding: 12px;
+            }
+
+            .video-card-header h3 {
+                font-size: 13px;
+            }
+
+            .video-card-body {
+                min-height: 280px; /* Más compacto en móvil */
+            }
+
+            /* El segundo video (skeleton) se oculta en móvil para ahorrar espacio */
+            .video-card:nth-child(2) {
+                display: none;
+            }
+
+            /* Instrucciones Card Mobile */
+            .instructions-card {
+                padding: 16px;
+                border-radius: 10px;
+            }
+
+            .instructions-card h3 {
+                font-size: 14px;
+                margin-bottom: 12px;
+            }
+
+            .instruction-item {
+                font-size: 13px;
+                padding: 10px;
+            }
+
+            /* Stats Panel Mobile */
+            .stats-panel {
+                padding: 12px;
+                gap: 12px;
+                border-radius: 10px;
+            }
+
+            .stat-item {
+                min-width: 100%;
+                padding: 10px;
+            }
+
+            .stat-label {
+                font-size: 11px;
+            }
+
+            .stat-value {
+                font-size: 14px;
+            }
+
+            /* Guided Instructions Overlay Mobile */
+            .instruction-card {
+                margin: 16px;
+                padding: 24px;
+                max-width: 90vw;
+            }
+
+            .instruction-icon {
+                font-size: 48px;
+                margin-bottom: 16px;
+            }
+
+            .instruction-card h3 {
+                font-size: 20px;
+            }
+
+            .instruction-card p {
+                font-size: 14px;
+            }
+
+            .instruction-controls {
                 flex-direction: column;
-                gap: 16px;
-                text-align: center;
+                gap: 8px;
+            }
+
+            .btn-instruction {
+                width: 100%;
+                padding: 12px;
+                font-size: 15px;
+            }
+        }
+
+        /* Extra Small Mobile (iPhone SE, etc) */
+        @media (max-width: 375px) {
+            .login-card {
+                padding: 20px;
+            }
+
+            .session-code-input {
+                font-size: 20px !important;
+                letter-spacing: 4px;
+            }
+
+            .video-card-body {
+                min-height: 240px;
             }
 
             .exam-header-right {
+                flex-direction: column;
+                gap: 8px;
                 width: 100%;
-                justify-content: center;
+            }
+
+            .status-badge,
+            .btn-disconnect {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* Landscape Mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            #loginScreen {
+                padding-top: 20px;
+            }
+
+            .login-card {
+                max-width: 600px;
+            }
+
+            .exam-header {
+                flex-direction: row;
+            }
+
+            .exam-header-right {
+                flex-direction: row;
+                width: auto;
+            }
+
+            .video-card-body {
+                min-height: 320px;
+            }
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) and (pointer: coarse) {
+            /* Botones más grandes para touch */
+            .btn-connect,
+            .btn-disconnect,
+            .btn-instruction {
+                min-height: 44px; /* Apple HIG minimum */
+            }
+
+            /* Eliminar hover effects en touch devices */
+            .btn-connect:hover,
+            .btn-disconnect:hover,
+            .btn-skip:hover,
+            .btn-audio:hover {
+                transform: none;
+            }
+
+            /* Active state para feedback táctil */
+            .btn-connect:active,
+            .btn-disconnect:active,
+            .btn-instruction:active {
+                transform: scale(0.98);
+                opacity: 0.9;
             }
         }
     </style>
