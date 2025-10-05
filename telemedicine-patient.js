@@ -850,12 +850,23 @@ class TelemedicinePatient {
             utterance.volume = 1.0; // Volumen máximo
 
             const voices = this.speechSynthesis.getVoices();
-            const spanishVoice = voices.find(voice => voice.lang.includes('es')) || voices[0];
+
+            // Priorizar voces nativas en español (mejor para iOS)
+            const spanishVoice =
+                voices.find(v => v.lang === 'es-MX' && v.localService) ||  // Español México local
+                voices.find(v => v.lang === 'es-ES' && v.localService) ||  // Español España local
+                voices.find(v => v.lang === 'es-US' && v.localService) ||  // Español US local
+                voices.find(v => v.lang.startsWith('es-') && v.localService) || // Cualquier español local
+                voices.find(v => v.lang === 'es-MX') ||  // Español México online
+                voices.find(v => v.lang === 'es-ES') ||  // Español España online
+                voices.find(v => v.lang.startsWith('es-')) || // Cualquier español
+                voices[0]; // Fallback
+
             if (spanishVoice) {
                 utterance.voice = spanishVoice;
             }
 
-            console.log(`🔊 Reproduciendo: "${text}" con voz ${spanishVoice?.name || 'default'}`);
+            console.log(`🔊 Reproduciendo: "${text}" con voz ${spanishVoice?.name || 'default'} (${spanishVoice?.lang})`);
             this.speechSynthesis.speak(utterance);
         };
 
@@ -883,10 +894,21 @@ class TelemedicinePatient {
             testUtterance.rate = 1.0;
 
             const voices = this.speechSynthesis.getVoices();
-            const spanishVoice = voices.find(voice => voice.lang.includes('es')) || voices[0];
+
+            // Priorizar voces nativas en español (mejor para iOS)
+            const spanishVoice =
+                voices.find(v => v.lang === 'es-MX' && v.localService) ||
+                voices.find(v => v.lang === 'es-ES' && v.localService) ||
+                voices.find(v => v.lang === 'es-US' && v.localService) ||
+                voices.find(v => v.lang.startsWith('es-') && v.localService) ||
+                voices.find(v => v.lang === 'es-MX') ||
+                voices.find(v => v.lang === 'es-ES') ||
+                voices.find(v => v.lang.startsWith('es-')) ||
+                voices[0];
+
             if (spanishVoice) {
                 testUtterance.voice = spanishVoice;
-                console.log('🎤 Usando voz:', spanishVoice.name);
+                console.log('🎤 Usando voz:', spanishVoice.name, '(' + spanishVoice.lang + ')');
             }
 
             // Reproducir el test utterance
