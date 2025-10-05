@@ -1,0 +1,31 @@
+{
+  "system": {
+    "audio_activado": "Audio activado",
+    "audio_instrucciones_activado": "Audio de instrucciones activado"
+  },
+  "exam_control": {
+    "examen_iniciado": "El médico ha iniciado el examen. Manténgase en posición.",
+    "examen_finalizado": "El examen ha finalizado. Puede relajarse.",
+    "secuencia_completada": "Secuencia completada. Excelente trabajo."
+  },
+  "guided_sequence": {
+    "preparacion": "Prepárese para el examen. Colóquese de pie frente a la cámara y quédese completamente quieto. Tiene 20 segundos.",
+    "posicion_inicial": "Colóquese de pie, relajado, con los brazos a los costados. Mire hacia la cámara.",
+    "cabeza_erguida": "Mantenga la cabeza erguida y mire directamente a la cámara. Respiración normal.",
+    "brazos_horizontal": "Levante lentamente ambos brazos hacia los lados hasta la altura de los hombros.",
+    "brazos_arriba": "Ahora levante los brazos completamente por encima de la cabeza.",
+    "brazos_bajar": "Baje los brazos y déjelos caer naturalmente a los costados. No fuerce la posición.",
+    "analisis_simetria": "Mantenga esta posición. Analizaremos la simetría de sus hombros y caderas.",
+    "captura_final": "Perfecto. Mantenga esta posición mientras capturamos los datos finales."
+  },
+  "dynamic_instructions": [
+    "Colóquese más cerca de la cámara",
+    "Retroceda un poco",
+    "Muévase hacia la derecha",
+    "Muévase hacia la izquierda",
+    "Perfecto, mantenga esa posición",
+    "Relaje los hombros",
+    "Enderece la espalda",
+    "Mire al frente"
+  ]
+}

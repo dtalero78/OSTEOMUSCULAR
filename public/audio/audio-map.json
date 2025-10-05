@@ -1,0 +1,31 @@
+{
+  "system": {
+    "audio_activado": "/audio/system_audio_activado.mp3",
+    "audio_instrucciones_activado": "/audio/system_audio_instrucciones_activado.mp3"
+  },
+  "exam": {
+    "examen_iniciado": "/audio/exam_examen_iniciado.mp3",
+    "examen_finalizado": "/audio/exam_examen_finalizado.mp3",
+    "secuencia_completada": "/audio/exam_secuencia_completada.mp3"
+  },
+  "guided": {
+    "preparacion": "/audio/guided_preparacion.mp3",
+    "posicion_inicial": "/audio/guided_posicion_inicial.mp3",
+    "cabeza_erguida": "/audio/guided_cabeza_erguida.mp3",
+    "brazos_horizontal": "/audio/guided_brazos_horizontal.mp3",
+    "brazos_arriba": "/audio/guided_brazos_arriba.mp3",
+    "brazos_bajar": "/audio/guided_brazos_bajar.mp3",
+    "analisis_simetria": "/audio/guided_analisis_simetria.mp3",
+    "captura_final": "/audio/guided_captura_final.mp3"
+  },
+  "instructions": {
+    "mas_cerca": "/audio/instruction_1.mp3",
+    "retroceda": "/audio/instruction_2.mp3",
+    "derecha": "/audio/instruction_3.mp3",
+    "izquierda": "/audio/instruction_4.mp3",
+    "perfecto_posicion": "/audio/instruction_5.mp3",
+    "relaje_hombros": "/audio/instruction_6.mp3",
+    "enderece_espalda": "/audio/instruction_7.mp3",
+    "mire_frente": "/audio/instruction_8.mp3"
+  }
+}

@@ -45,7 +45,9 @@ class TelemedicinePatient {
         };
 
         this.audioEnabled = true;
+        this.audioActivated = false;
         this.speechSynthesis = window.speechSynthesis;
+        this.audioManager = null; // Se inicializa en showExamScreen()
 
         // WebRTC configuration
         this.peerConnection = null;
@@ -825,7 +827,7 @@ class TelemedicinePatient {
 
 
     speak(text) {
-        if (!this.audioEnabled || !window.speechSynthesis) return;
+        if (!this.audioEnabled) return;
 
         // Detectar si es móvil y audio no ha sido activado
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -839,38 +841,54 @@ class TelemedicinePatient {
             return;
         }
 
-        // Función para reproducir con voces cargadas
+        // PRIORIDAD 1: Intentar usar AudioManager (audios pre-cargados)
+        if (this.audioManager && this.audioManager.isReady() && typeof findAudioForText === 'function') {
+            const audioData = findAudioForText(text);
+            if (audioData) {
+                const audio = this.audioManager.play(audioData.category, audioData.key);
+                if (audio) {
+                    console.log(`🔊 Reproduciendo MP3: ${audioData.category}.${audioData.key}`);
+                    return; // Audio reproducido exitosamente
+                }
+            }
+        }
+
+        // FALLBACK: Usar speechSynthesis
+        if (!window.speechSynthesis) {
+            console.warn('⚠️ speechSynthesis no disponible');
+            return;
+        }
+
         const playWithVoices = () => {
             this.speechSynthesis.cancel();
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'es-ES';
-            utterance.rate = 0.9;
+            utterance.rate = 0.85; // Más lento para mayor claridad
             utterance.pitch = 1.0;
-            utterance.volume = 1.0; // Volumen máximo
+            utterance.volume = 1.0;
 
             const voices = this.speechSynthesis.getVoices();
 
-            // Priorizar voces nativas en español (mejor para iOS)
+            // Priorizar voces nativas en español
             const spanishVoice =
-                voices.find(v => v.lang === 'es-MX' && v.localService) ||  // Español México local
-                voices.find(v => v.lang === 'es-ES' && v.localService) ||  // Español España local
-                voices.find(v => v.lang === 'es-US' && v.localService) ||  // Español US local
-                voices.find(v => v.lang.startsWith('es-') && v.localService) || // Cualquier español local
-                voices.find(v => v.lang === 'es-MX') ||  // Español México online
-                voices.find(v => v.lang === 'es-ES') ||  // Español España online
-                voices.find(v => v.lang.startsWith('es-')) || // Cualquier español
-                voices[0]; // Fallback
+                voices.find(v => v.lang === 'es-MX' && v.localService) ||
+                voices.find(v => v.lang === 'es-ES' && v.localService) ||
+                voices.find(v => v.lang === 'es-US' && v.localService) ||
+                voices.find(v => v.lang.startsWith('es-') && v.localService) ||
+                voices.find(v => v.lang === 'es-MX') ||
+                voices.find(v => v.lang === 'es-ES') ||
+                voices.find(v => v.lang.startsWith('es-')) ||
+                voices[0];
 
             if (spanishVoice) {
                 utterance.voice = spanishVoice;
             }
 
-            console.log(`🔊 Reproduciendo: "${text}" con voz ${spanishVoice?.name || 'default'} (${spanishVoice?.lang})`);
+            console.log(`🔊 Fallback speechSynthesis: "${text.substring(0, 30)}..." (${spanishVoice?.lang || 'default'})`);
             this.speechSynthesis.speak(utterance);
         };
 
-        // Cargar voces si no están listas
         const voices = this.speechSynthesis.getVoices();
         if (voices.length === 0) {
             this.speechSynthesis.addEventListener('voiceschanged', playWithVoices, { once: true });
@@ -978,6 +996,26 @@ class TelemedicinePatient {
     showExamScreen() {
         this.loginScreen.style.display = 'none';
         this.examScreen.style.display = 'block';
+
+        // Inicializar AudioManager para pre-carga
+        if (typeof audioManager !== 'undefined') {
+            this.audioManager = audioManager;
+
+            // Configurar callbacks de progreso
+            this.audioManager.onLoadProgress = (progress, current, total) => {
+                console.log(`📥 Cargando audios: ${current}/${total} (${progress.toFixed(0)}%)`);
+            };
+
+            this.audioManager.onLoadComplete = () => {
+                console.log('✅ Todos los audios pre-cargados y listos');
+                this.showMessage('🔊 Audios cargados correctamente');
+            };
+
+            // Iniciar pre-carga
+            this.audioManager.initialize().catch(err => {
+                console.warn('⚠️ Error pre-cargando audios, usando fallback:', err);
+            });
+        }
 
         // Mostrar panel de activación de audio en móviles al conectarse
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
