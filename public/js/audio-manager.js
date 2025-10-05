@@ -126,14 +126,14 @@ class AudioManager {
             return null;
         }
 
-        // Clonar audio para permitir reproducción simultánea
-        const audioClone = audio.cloneNode();
-        audioClone.play().catch(err => {
+        // En iOS, no podemos clonar. Reiniciamos y reproducimos el mismo elemento
+        audio.currentTime = 0; // Reiniciar al inicio
+        audio.play().catch(err => {
             console.error('Error reproduciendo audio:', err);
         });
 
         console.log(`🔊 Reproduciendo: ${category}.${key}`);
-        return audioClone;
+        return audio;
     }
 
     /**
@@ -150,12 +150,13 @@ class AudioManager {
             return null;
         }
 
-        const audioClone = audio.cloneNode();
-        audioClone.play().catch(err => {
+        // En iOS, no podemos clonar. Reiniciamos y reproducimos el mismo elemento
+        audio.currentTime = 0;
+        audio.play().catch(err => {
             console.error('Error reproduciendo audio:', err);
         });
 
-        return audioClone;
+        return audio;
     }
 
     /**
