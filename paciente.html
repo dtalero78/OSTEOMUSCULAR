@@ -922,6 +922,18 @@
 
     <!-- Socket.io Client Library -->
     <script src="/socket.io/socket.io.js"></script>
+
+    <!-- Eruda: Consola móvil para debugging (solo carga si hay ?debug en URL) -->
+    <script>
+        // Cargar Eruda solo si hay ?debug en la URL
+        if (window.location.search.includes('debug')) {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+            script.onload = () => eruda.init();
+            document.body.appendChild(script);
+        }
+    </script>
+
     <script type="module" src="telemedicine-patient.js"></script>
 </body>
 </html>
