@@ -688,12 +688,51 @@
             }
         }
 
+        /* Audio Activation Panel */
+        .audio-activation-panel {
+            margin: 16px;
+            padding: 16px;
+            background: #2a2d35;
+            border-radius: 12px;
+            border: 2px solid #5b8def;
+            text-align: center;
+        }
+
+        .btn-activate-audio {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #5b8def 0%, #4a7de8 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Figtree', sans-serif;
+        }
+
+        .btn-activate-audio:hover {
+            background: linear-gradient(135deg, #4a7de8 0%, #396ed7 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(91, 141, 239, 0.3);
+        }
+
+        .btn-activate-audio:active {
+            transform: scale(0.98);
+        }
+
+        .btn-activate-audio.activated {
+            background: linear-gradient(135deg, #5ebd6d 0%, #4da95b 100%);
+        }
+
         /* Touch-friendly improvements */
         @media (hover: none) and (pointer: coarse) {
             /* Botones más grandes para touch */
             .btn-connect,
             .btn-disconnect,
-            .btn-instruction {
+            .btn-instruction,
+            .btn-activate-audio {
                 min-height: 44px; /* Apple HIG minimum */
             }
 
@@ -701,14 +740,16 @@
             .btn-connect:hover,
             .btn-disconnect:hover,
             .btn-skip:hover,
-            .btn-audio:hover {
+            .btn-audio:hover,
+            .btn-activate-audio:hover {
                 transform: none;
             }
 
             /* Active state para feedback táctil */
             .btn-connect:active,
             .btn-disconnect:active,
-            .btn-instruction:active {
+            .btn-instruction:active,
+            .btn-activate-audio:active {
                 transform: scale(0.98);
                 opacity: 0.9;
             }
@@ -835,6 +876,16 @@
                         Esperando datos...
                     </div>
                 </div>
+            </div>
+
+            <!-- Botón de Activación de Audio para Móvil -->
+            <div id="audioActivationPanel" class="audio-activation-panel" style="display: none;">
+                <button id="activateAudioBtn" class="btn-activate-audio">
+                    🔊 Activar Audio de Instrucciones
+                </button>
+                <p style="font-size: 12px; color: #b0b3b8; margin-top: 8px; text-align: center;">
+                    Toque el botón para habilitar las instrucciones de voz
+                </p>
             </div>
         </div>
     </div>

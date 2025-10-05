@@ -125,6 +125,11 @@ class TelemedicinePatient {
         // Estado
         this.transmissionStatus = document.getElementById('transmissionStatus');
         this.dataStats = document.getElementById('dataStats');
+
+        // Audio activation (para móviles)
+        this.audioActivationPanel = document.getElementById('audioActivationPanel');
+        this.activateAudioBtn = document.getElementById('activateAudioBtn');
+        this.audioActivated = false;
     }
 
     setupEventListeners() {
@@ -152,6 +157,11 @@ class TelemedicinePatient {
         this.sessionCodeInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.connectToDoctor();
         });
+
+        // Botón de activación de audio para móvil
+        if (this.activateAudioBtn) {
+            this.activateAudioBtn.addEventListener('click', () => this.activateAudio());
+        }
     }
 
     setupSocketEvents() {
@@ -789,6 +799,18 @@ class TelemedicinePatient {
     speak(text) {
         if (!this.audioEnabled || !window.speechSynthesis) return;
 
+        // Detectar si es móvil y audio no ha sido activado
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile && !this.audioActivated) {
+            // Mostrar panel de activación de audio
+            if (this.audioActivationPanel) {
+                this.audioActivationPanel.style.display = 'block';
+            }
+            console.log('📱 Dispositivo móvil detectado - Requiere activación de audio por el usuario');
+            return;
+        }
+
         this.speechSynthesis.cancel();
 
         const utterance = new SpeechSynthesisUtterance(text);
@@ -804,6 +826,37 @@ class TelemedicinePatient {
         }
 
         this.speechSynthesis.speak(utterance);
+    }
+
+    activateAudio() {
+        console.log('🔊 Activando audio por interacción del usuario...');
+
+        // Test de speech synthesis para "desbloquear" en móviles
+        const testUtterance = new SpeechSynthesisUtterance('Audio activado');
+        testUtterance.lang = 'es-ES';
+        testUtterance.volume = 0.8;
+
+        this.speechSynthesis.speak(testUtterance);
+
+        // Marcar como activado
+        this.audioActivated = true;
+
+        // Actualizar UI del botón
+        if (this.activateAudioBtn) {
+            this.activateAudioBtn.textContent = '✅ Audio Activado';
+            this.activateAudioBtn.classList.add('activated');
+            this.activateAudioBtn.disabled = true;
+        }
+
+        // Ocultar panel después de 2 segundos
+        setTimeout(() => {
+            if (this.audioActivationPanel) {
+                this.audioActivationPanel.style.display = 'none';
+            }
+        }, 2000);
+
+        console.log('✅ Audio activado exitosamente');
+        this.showMessage('🔊 Audio de instrucciones activado');
     }
 
     showMessage(message, duration = 3000) {

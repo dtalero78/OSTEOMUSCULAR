@@ -379,7 +379,7 @@ class TelemedicineDoctor {
 
             // Manejar tracks entrantes (video del paciente)
             this.peerConnection.ontrack = (event) => {
-                console.log('📹 Stream recibido:', event.streams[0]);
+                console.log('📹 Stream recibido del paciente:', event.streams[0]);
                 this.remoteVideo.srcObject = event.streams[0];
 
                 // Mostrar video y ocultar placeholder
@@ -388,23 +388,55 @@ class TelemedicineDoctor {
                     this.videoPlaceholder.style.visibility = 'hidden';
                 }
 
-                // Asegurar que el video sea visible
+                // Asegurar que el video sea visible con estilos forzados
                 this.remoteVideo.style.display = 'block';
                 this.remoteVideo.style.visibility = 'visible';
                 this.remoteVideo.style.opacity = '1';
+                this.remoteVideo.style.width = '100%';
+                this.remoteVideo.style.height = '100%';
+                this.remoteVideo.style.objectFit = 'cover';
+                this.remoteVideo.style.zIndex = '50'; // Por encima del placeholder
+
+                // Configurar atributos de video para móvil
+                this.remoteVideo.setAttribute('playsinline', '');
+                this.remoteVideo.setAttribute('webkit-playsinline', '');
 
                 // Actualizar info del video
                 this.remoteVideo.onloadedmetadata = () => {
                     const width = this.remoteVideo.videoWidth;
                     const height = this.remoteVideo.videoHeight;
                     this.videoInfo.textContent = `Resolución: ${width}x${height} | En vivo`;
-                    console.log('✅ Video del paciente mostrándose:', width, 'x', height);
+                    console.log('✅ Metadata del video cargada:', width, 'x', height);
+
+                    // Intentar reproducir inmediatamente
+                    this.playRemoteVideo();
                 };
 
-                // Play automático si está pausado
-                this.remoteVideo.play().catch(err => {
-                    console.log('⚠️ Autoplay bloqueado, requiere interacción del usuario:', err);
-                });
+                // Intentar play automático
+                this.playRemoteVideo();
+            };
+
+            // Almacenar referencia para uso posterior
+            this.playRemoteVideo = () => {
+                const playPromise = this.remoteVideo.play();
+
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            console.log('✅ Video del paciente reproduciéndose automáticamente');
+                        })
+                        .catch(err => {
+                            console.log('⚠️ Autoplay bloqueado en móvil:', err.message);
+
+                            // Detectar si es móvil
+                            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                            if (isMobile) {
+                                // Mostrar botón de play manual en el video del paciente
+                                this.showPlayButton();
+                            }
+                        });
+                }
             };
 
             // Manejar ICE candidates
@@ -1164,6 +1196,50 @@ class TelemedicineDoctor {
         } else {
             this.connectionStatus.classList.add('hidden');
         }
+    }
+
+    showPlayButton() {
+        // Crear botón de play si no existe
+        if (document.getElementById('videoPlayButton')) return;
+
+        const playButton = document.createElement('button');
+        playButton.id = 'videoPlayButton';
+        playButton.innerHTML = '▶️ Reproducir Video del Paciente';
+        playButton.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            background: linear-gradient(135deg, #5b8def 0%, #4a7de8 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Figtree', sans-serif;
+            box-shadow: 0 4px 12px rgba(91, 141, 239, 0.4);
+        `;
+
+        playButton.addEventListener('click', () => {
+            this.remoteVideo.play()
+                .then(() => {
+                    console.log('✅ Video del paciente reproduciéndose tras interacción del usuario');
+                    playButton.remove();
+                })
+                .catch(err => {
+                    console.error('❌ Error al reproducir video:', err);
+                });
+        });
+
+        // Agregar al contenedor del video del paciente
+        const videoContainer = this.remoteVideo.parentElement;
+        videoContainer.style.position = 'relative';
+        videoContainer.appendChild(playButton);
+
+        console.log('🎬 Botón de play manual agregado para dispositivo móvil');
     }
 }
 
