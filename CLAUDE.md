@@ -6,6 +6,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **telemedicine system** for medical pose analysis called "Examen Osteomuscular Virtual". The application now supports **remote medical examinations** where patients connect from home and doctors analyze their posture in real-time from their medical office. The system uses MediaPipe Pose Landmarker for real-time postural and joint analysis with streaming capabilities between patient and doctor.
 
+## Sistema Actual (Octubre 2025) - PRODUCCIÓN
+
+**Estado**: ✅ **Completamente funcional en móvil y desktop**
+
+**Últimas mejoras críticas**:
+- 🎨 **Mobile UX optimizada**: Banner de instrucciones superior, countdown no bloqueante, overlays ocultos
+- 🔊 **Audio iOS funcional**: Pre-carga de 21 MP3s, activación silenciosa, fallback automático
+- 📱 **Responsive completo**: Layout adaptado para móviles (≤768px), táctil-friendly
+- 🏥 **Métricas estabilizadas**: Buffer de 30 frames para resultados médicos reproducibles
+- 🔗 **Arquitectura híbrida**: WebRTC P2P (métricas 30 FPS) + Socket.io (landmarks 15 FPS)
+
+**Capacidad actual**: 50-60 sesiones concurrentes en Digital Ocean $24/mes
+
+**Ver**: [Mobile UX Overhaul](#mobile-ux-overhaul-banner--clean-overlays-2025-10-06---major-ux-fix) para detalles de la última implementación
+
 ## Architecture
 
 ### Core Components
