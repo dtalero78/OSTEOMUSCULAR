@@ -899,11 +899,9 @@ class TelemedicinePatient {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         if (isMobile && !this.audioActivated) {
-            // Mostrar panel de activación de audio
-            if (this.audioActivationPanel) {
-                this.audioActivationPanel.style.display = 'block';
-            }
-            console.log('📱 Dispositivo móvil detectado - Requiere activación de audio por el usuario');
+            // NO mostrar panel aquí - se muestra desde onLoadComplete
+            // Solo registrar que se necesita activación
+            console.log('📱 Audio requiere activación de usuario - esperando carga de MP3s');
             return;
         }
 
