@@ -477,33 +477,32 @@ class TelemedicinePatient {
                     timestamp: Date.now()
                 };
 
-                // ✅ NUEVO: Enviar por WebRTC si está disponible, sino por Socket.io
-                if (this.dataChannelReady && this.dataChannel.readyState === 'open') {
-                    // WebRTC: Enviar landmarks solo 1 de cada 3 frames (10 FPS)
-                    // Métricas se envían en todos los frames (30 FPS)
-                    const shouldSendLandmarks = this.transmissionStats.frameCount % 3 === 0;
+                // SOLUCIÓN HÍBRIDA: WebRTC para métricas, Socket.io para landmarks
+                // Esto evita problemas de truncamiento en Data Channel (límite 16KB)
 
-                    const compactData = {
+                if (this.dataChannelReady && this.dataChannel.readyState === 'open') {
+                    // WebRTC: Solo métricas (pequeñas, ~1KB)
+                    const metricsOnly = {
                         sessionCode: this.sessionCode,
-                        landmarks: shouldSendLandmarks ? landmarks.map(lm => ({
-                            x: parseFloat(lm.x.toFixed(3)),
-                            y: parseFloat(lm.y.toFixed(3)),
-                            z: parseFloat(lm.z.toFixed(3)),
-                            visibility: parseFloat(lm.visibility.toFixed(2))
-                        })) : null,
                         metrics: this.currentMetrics,
                         timestamp: Date.now()
                     };
 
                     try {
-                        this.dataChannel.send(JSON.stringify(compactData));
+                        this.dataChannel.send(JSON.stringify(metricsOnly));
                     } catch (err) {
-                        console.warn('⚠️ WebRTC send error, fallback Socket.io');
-                        this.socket.emit('pose-data', dataToSend);
+                        console.warn('⚠️ WebRTC error:', err.message);
                     }
-                } else {
-                    // Fallback a Socket.io mientras se establece WebRTC
-                    this.socket.emit('pose-data', dataToSend);
+                }
+
+                // Socket.io: Landmarks para skeleton (sin límite de tamaño)
+                // Enviar cada 2 frames para reducir carga (15 FPS skeleton)
+                if (this.transmissionStats.frameCount % 2 === 0) {
+                    this.socket.emit('pose-landmarks', {
+                        sessionCode: this.sessionCode,
+                        landmarks: landmarks,
+                        timestamp: Date.now()
+                    });
                 }
 
                 // Actualizar estadísticas (sin log para no saturar consola)

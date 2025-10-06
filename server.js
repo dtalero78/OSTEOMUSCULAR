@@ -162,7 +162,21 @@ io.on('connection', (socket) => {
         console.log(`👤 Paciente conectado a sesión: ${sessionCode}`);
     });
 
-    // Transmitir datos de pose del paciente al médico
+    // ✅ NUEVO: Transmitir landmarks por Socket.io (separado de métricas)
+    socket.on('pose-landmarks', ({ sessionCode, landmarks, timestamp }) => {
+        const session = activeSessions.get(sessionCode);
+
+        if (session && session.patientId === socket.id && session.isActive) {
+            // Enviar landmarks al médico
+            io.to(session.doctorId).emit('pose-landmarks', {
+                sessionCode,
+                landmarks,
+                timestamp: timestamp || Date.now()
+            });
+        }
+    });
+
+    // Transmitir datos de pose del paciente al médico (LEGACY - mantener para fallback)
     socket.on('pose-data', ({ sessionCode, landmarks, metrics, timestamp }) => {
         const session = activeSessions.get(sessionCode);
 

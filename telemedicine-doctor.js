@@ -335,6 +335,14 @@ class TelemedicineDoctor {
             console.log('📸 Confirmación de snapshot');
         });
 
+        // ✅ NUEVO: Recibir landmarks por Socket.io (separado de métricas)
+        this.socket.on('pose-landmarks', ({ sessionCode, landmarks, timestamp }) => {
+            if (sessionCode === this.sessionCode && landmarks) {
+                this.lastLandmarks = landmarks;
+                this.drawPoseOnCanvas(landmarks);
+            }
+        });
+
         // WebRTC signaling - Offer del paciente
         this.socket.on('webrtc-offer', async ({ offer }) => {
             console.log('📹 WebRTC Offer recibido del paciente');
@@ -388,18 +396,24 @@ class TelemedicineDoctor {
                 };
 
                 dataChannel.onmessage = (event) => {
-                    // Parsear datos y procesarlos con la misma función existente
+                    // WebRTC Data Channel: Solo recibe métricas (sin landmarks)
                     try {
-                        // Validar que event.data no esté vacío
                         if (!event.data || event.data === 'undefined' || event.data === 'null') {
-                            console.warn('⚠️ Datos vacíos recibidos, ignorando');
                             return;
                         }
 
-                        const poseData = JSON.parse(event.data);
-                        this.handlePoseData(poseData);
+                        const data = JSON.parse(event.data);
+
+                        // Si tiene métricas, actualizar (landmarks vienen por Socket.io)
+                        if (data.metrics) {
+                            this.handlePoseData({
+                                landmarks: this.lastLandmarks || [],
+                                metrics: data.metrics,
+                                timestamp: data.timestamp
+                            });
+                        }
                     } catch (error) {
-                        console.error('❌ Error parseando pose data:', error, 'Data:', event.data?.substring(0, 100));
+                        console.error('❌ Error en WebRTC data:', error.message);
                     }
                 };
 
