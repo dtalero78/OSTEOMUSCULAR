@@ -493,9 +493,9 @@
             display: none !important;
         }
 
-        /* Instrucción Actual - Banner Superior */
+        /* Instrucción Actual - Banner Superior (solo móvil) */
         #currentInstructionBanner {
-            display: block; /* Visible en todas las pantallas para testing */
+            display: none; /* Oculto por defecto en desktop */
             position: sticky;
             top: 0;
             left: 0;
@@ -561,8 +561,9 @@
                 padding: 0; /* Sin padding para que banner llegue al borde */
             }
 
-            /* Banner de instrucción - ajustes móvil */
+            /* Banner de instrucción - VISIBLE en móvil */
             #currentInstructionBanner {
+                display: block !important; /* Forzar visible en móvil */
                 font-size: 22px;
                 padding: 18px 16px;
             }
@@ -664,45 +665,14 @@
                 background: rgba(28, 30, 33, 0.95);
             }
 
-            /* Guided Instructions Overlay Mobile */
+            /* Guided Instructions Overlay Mobile - OCULTAR OVERLAY, SOLO BANNER */
             .guided-instructions-overlay {
-                background: rgba(0, 0, 0, 0.95);
+                display: none !important; /* En móvil solo usamos el banner superior */
             }
 
-            .instruction-card {
-                margin: 20px;
-                padding: 28px;
-                max-width: 90vw;
-            }
-
-            .instruction-icon {
-                display: none; /* Sin emojis en instrucciones guiadas móvil */
-            }
-
-            .instruction-card h3 {
-                font-size: 24px;
-                margin-bottom: 20px;
-            }
-
-            .instruction-card p {
-                font-size: 18px;
-                line-height: 1.5;
-            }
-
-            .step-progress {
-                font-size: 15px;
-            }
-
-            .instruction-controls {
-                flex-direction: column;
-                gap: 10px;
-                margin-top: 20px;
-            }
-
-            .btn-instruction {
-                width: 100%;
-                padding: 14px;
-                font-size: 16px;
+            /* Ocultar countdown circular grande en móvil */
+            #countdownBigOverlay {
+                display: none !important; /* Solo usamos banner + countdown-overlay arriba */
             }
         }
 
