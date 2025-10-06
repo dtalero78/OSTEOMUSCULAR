@@ -104,6 +104,37 @@ class AudioManager {
     }
 
     /**
+     * Desbloquear todos los audios en iOS (debe llamarse en interacción de usuario)
+     */
+    async unlockAll() {
+        if (!this.isLoaded) {
+            console.log('⏳ AudioManager: Esperando pre-carga para desbloquear');
+            return false;
+        }
+
+        console.log('🔓 Desbloqueando todos los audios para iOS...');
+        let unlockedCount = 0;
+
+        for (const [url, audio] of this.audioCache.entries()) {
+            try {
+                const originalVolume = audio.volume;
+                audio.volume = 0; // Silenciar
+                audio.currentTime = 0;
+                await audio.play();
+                await audio.pause();
+                audio.volume = originalVolume; // Restaurar volumen
+                audio.currentTime = 0;
+                unlockedCount++;
+            } catch (err) {
+                // Ignorar errores individuales
+            }
+        }
+
+        console.log(`✅ ${unlockedCount}/${this.audioCache.size} audios desbloqueados`);
+        return unlockedCount > 0;
+    }
+
+    /**
      * Reproducir audio por categoría y clave
      * @param {string} category - 'system', 'exam', 'guided', 'instructions'
      * @param {string} key - clave del audio en el mapa
@@ -128,6 +159,7 @@ class AudioManager {
 
         // En iOS, no podemos clonar. Reiniciamos y reproducimos el mismo elemento
         audio.currentTime = 0; // Reiniciar al inicio
+        audio.volume = 1.0; // Asegurar volumen completo
 
         try {
             await audio.play();

@@ -1012,17 +1012,19 @@ class TelemedicinePatient {
             // Reproducir el test utterance
             this.speechSynthesis.speak(testUtterance);
 
-            // DESBLOQUEAR MP3s: Reproducir un audio silencioso del AudioManager
+            // DESBLOQUEAR TODOS LOS MP3s en iOS (debe hacerse durante interacción de usuario)
             if (this.audioManager && this.audioManager.isReady()) {
-                // Intentar reproducir el primer audio disponible en volumen 0 para desbloquear
-                this.audioManager.play('system', 'audio_activado').then(success => {
+                // Primero desbloquear TODOS los audios
+                this.audioManager.unlockAll().then(success => {
                     if (success) {
-                        console.log('✅ MP3s desbloqueados correctamente');
+                        console.log('🔓 Todos los MP3s desbloqueados para iOS');
+                        // Luego reproducir el audio de activación
+                        this.audioManager.play('system', 'audio_activado');
                     } else {
-                        console.log('⚠️ MP3s aún bloqueados, usando fallback');
+                        console.log('⚠️ No se pudieron desbloquear MP3s, usando fallback');
                     }
                 }).catch(() => {
-                    // Ignorar error, fallback funcionará
+                    console.log('⚠️ Error desbloqueando MP3s, usando fallback');
                 });
             }
 
