@@ -1010,21 +1010,11 @@ class TelemedicinePatient {
             // Reproducir el test utterance
             this.speechSynthesis.speak(testUtterance);
 
-            // DESBLOQUEAR TODOS LOS MP3s en iOS (debe hacerse durante interacción de usuario)
-            // El botón solo se muestra cuando los audios están listos (onLoadComplete)
+            // NO intentar desbloquear todos los MP3s aquí - causa reproducción simultánea
+            // Los MP3s se desbloquearán naturalmente cuando se reproduzca el primero
+            // iOS permite audio después de interacción de usuario, simplemente marcar como activado
             if (this.audioManager && this.audioManager.isReady()) {
-                // Desbloquear TODOS los audios (ya están pre-cargados)
-                this.audioManager.unlockAll().then(success => {
-                    if (success) {
-                        console.log('🔓 Todos los MP3s desbloqueados para iOS');
-                        // NO reproducir audio_activado aquí - speechSynthesis ya habló
-                        // Los MP3s están listos para las siguientes instrucciones
-                    } else {
-                        console.log('⚠️ No se pudieron desbloquear MP3s, usando fallback');
-                    }
-                }).catch(() => {
-                    console.log('⚠️ Error desbloqueando MP3s, usando fallback');
-                });
+                console.log('✅ AudioManager listo - MP3s se reproducirán en las instrucciones');
             } else {
                 console.log('⚠️ AudioManager no listo, usando solo speechSynthesis');
             }
