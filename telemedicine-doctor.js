@@ -846,9 +846,24 @@ class TelemedicineDoctor {
     handlePoseData(landmarks, metrics, timestamp) {
         if (!this.patientConnected) return;
 
+        // DEBUG: Verificar que métricas lleguen correctamente
+        if (!metrics || !metrics.posture) {
+            console.warn('⚠️ Métricas inválidas recibidas:', metrics);
+            return;
+        }
+
         // Guardar datos recibidos
         this.receivedLandmarks = landmarks;
         this.currentMetrics = metrics;
+
+        // DEBUG: Log cada 30 frames para confirmar métricas
+        if (this.metricsBuffer.length % 30 === 0) {
+            console.log('✅ Métricas recibidas:', {
+                cervical: metrics.posture?.cervicalAlignment?.toFixed(2),
+                pelvic: metrics.posture?.pelvicTilt?.toFixed(2),
+                buffer: this.metricsBuffer.length
+            });
+        }
 
         // Agregar métricas al buffer para estabilización
         this.metricsBuffer.push({
