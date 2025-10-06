@@ -377,6 +377,36 @@ class TelemedicineDoctor {
             // Crear peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
 
+            // ✅ NUEVO: Escuchar data channel del paciente
+            this.peerConnection.ondatachannel = (event) => {
+                const dataChannel = event.channel;
+                console.log('✅ Data channel recibido del paciente');
+
+                dataChannel.onopen = () => {
+                    console.log('✅ Data channel abierto - recibiendo pose data por WebRTC P2P');
+                    this.dataChannelReady = true;
+                };
+
+                dataChannel.onmessage = (event) => {
+                    // Parsear datos y procesarlos con la misma función existente
+                    try {
+                        const poseData = JSON.parse(event.data);
+                        this.handlePoseData(poseData);
+                    } catch (error) {
+                        console.error('❌ Error parseando pose data:', error);
+                    }
+                };
+
+                dataChannel.onclose = () => {
+                    console.log('⚠️ Data channel cerrado');
+                    this.dataChannelReady = false;
+                };
+
+                dataChannel.onerror = (error) => {
+                    console.error('❌ Error en data channel:', error);
+                };
+            };
+
             // Manejar tracks entrantes (video del paciente)
             this.peerConnection.ontrack = (event) => {
                 console.log('📹 Stream recibido del paciente:', event.streams[0]);

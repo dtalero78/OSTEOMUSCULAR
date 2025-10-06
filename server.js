@@ -32,6 +32,13 @@ const activeSessions = new Map();
 const waitingDoctors = new Map();
 const waitingPatients = new Map();
 
+// ✅ NUEVO: Métricas de uso de WebRTC
+const connectionMetrics = {
+    webrtcSessions: 0,
+    socketioFallbacks: 0,
+    totalPoseDataMessages: 0
+};
+
 // Rutas principales
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -43,6 +50,29 @@ app.get('/paciente', (req, res) => {
 
 app.get('/medico', (req, res) => {
     res.sendFile(path.join(__dirname, 'medico.html'));
+});
+
+// ✅ NUEVO: Endpoint para ver métricas de conexión
+app.get('/metrics', (req, res) => {
+    const activeSessionsCount = activeSessions.size;
+    const webrtcPercentage = connectionMetrics.totalPoseDataMessages > 0
+        ? ((1 - connectionMetrics.socketioFallbacks / connectionMetrics.totalPoseDataMessages) * 100).toFixed(1)
+        : 0;
+
+    res.json({
+        activeSessions: activeSessionsCount,
+        connectionMetrics: {
+            ...connectionMetrics,
+            webrtcPercentage: `${webrtcPercentage}%`,
+            socketioPercentage: `${(100 - webrtcPercentage).toFixed(1)}%`
+        },
+        sessionsList: Array.from(activeSessions.entries()).map(([code, session]) => ({
+            code,
+            isActive: session.isActive,
+            hasDoctor: !!session.doctorId,
+            hasPatient: !!session.patientId
+        }))
+    });
 });
 
 // Generar código de sesión único
@@ -144,8 +174,14 @@ io.on('connection', (socket) => {
                 timestamp: timestamp || Date.now()
             });
 
-            // Log para debugging
-            console.log(`📡 Datos transmitidos - Landmarks: ${landmarks?.length || 0}, Sesión: ${sessionCode}`);
+            // ✅ NUEVO: Contar mensajes de fallback (Socket.io)
+            connectionMetrics.totalPoseDataMessages++;
+            connectionMetrics.socketioFallbacks++;
+
+            // Log reducido (solo cada 100 mensajes para no saturar)
+            if (connectionMetrics.totalPoseDataMessages % 100 === 0) {
+                console.log(`📊 Socket.io fallback: ${connectionMetrics.socketioFallbacks} msgs | Total: ${connectionMetrics.totalPoseDataMessages}`);
+            }
         } else {
             console.log(`⚠️ Datos rechazados - Sesión inválida o inactiva: ${sessionCode}`);
         }

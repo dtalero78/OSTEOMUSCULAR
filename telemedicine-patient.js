@@ -372,6 +372,28 @@ class TelemedicinePatient {
             // Crear peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
 
+            // ✅ NUEVO: Crear data channel para pose data
+            this.dataChannel = this.peerConnection.createDataChannel('pose-data', {
+                ordered: false,        // No importa el orden (streaming en tiempo real)
+                maxRetransmits: 0      // No reenviar paquetes perdidos (mejor latencia)
+            });
+
+            this.dataChannel.onopen = () => {
+                console.log('✅ Data channel abierto - pose data irá por WebRTC P2P');
+                this.dataChannelReady = true;
+                this.updateTransmissionStatus('📡 Transmitiendo por WebRTC P2P', 'active');
+            };
+
+            this.dataChannel.onclose = () => {
+                console.log('⚠️ Data channel cerrado - volviendo a Socket.io');
+                this.dataChannelReady = false;
+            };
+
+            this.dataChannel.onerror = (error) => {
+                console.error('❌ Error en data channel:', error);
+                this.dataChannelReady = false;
+            };
+
             // Agregar tracks del stream al peer connection
             stream.getTracks().forEach(track => {
                 this.peerConnection.addTrack(track, stream);
@@ -390,7 +412,7 @@ class TelemedicinePatient {
             // Manejar estado de conexión
             this.peerConnection.onconnectionstatechange = () => {
                 if (this.peerConnection.connectionState === 'connected') {
-                    console.log('✅ Video streaming conectado');
+                    console.log('✅ WebRTC conectado (video + data channel)');
                 }
             };
 
@@ -455,7 +477,14 @@ class TelemedicinePatient {
                     timestamp: Date.now()
                 };
 
-                this.socket.emit('pose-data', dataToSend);
+                // ✅ NUEVO: Enviar por WebRTC si está disponible, sino por Socket.io
+                if (this.dataChannelReady && this.dataChannel.readyState === 'open') {
+                    // WebRTC P2P (no consume recursos del servidor)
+                    this.dataChannel.send(JSON.stringify(dataToSend));
+                } else {
+                    // Fallback a Socket.io mientras se establece WebRTC
+                    this.socket.emit('pose-data', dataToSend);
+                }
 
                 // Actualizar estadísticas (sin log para no saturar consola)
                 this.transmissionStats.frameCount++;
