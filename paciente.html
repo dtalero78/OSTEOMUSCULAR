@@ -493,9 +493,9 @@
             display: none !important;
         }
 
-        /* Instrucción Actual - Banner Superior Móvil */
+        /* Instrucción Actual - Banner Superior */
         #currentInstructionBanner {
-            display: none;
+            display: block; /* Visible en todas las pantallas para testing */
             position: sticky;
             top: 0;
             left: 0;
@@ -561,9 +561,8 @@
                 padding: 0; /* Sin padding para que banner llegue al borde */
             }
 
-            /* Banner de instrucción visible en móvil */
+            /* Banner de instrucción - ajustes móvil */
             #currentInstructionBanner {
-                display: block;
                 font-size: 22px;
                 padding: 18px 16px;
             }
