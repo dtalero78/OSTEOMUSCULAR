@@ -1013,12 +1013,13 @@ class TelemedicinePatient {
             this.speechSynthesis.speak(testUtterance);
 
             // DESBLOQUEAR TODOS LOS MP3s en iOS (debe hacerse durante interacción de usuario)
+            // El botón solo se muestra cuando los audios están listos (onLoadComplete)
             if (this.audioManager && this.audioManager.isReady()) {
-                // Primero desbloquear TODOS los audios
+                // Desbloquear TODOS los audios (ya están pre-cargados)
                 this.audioManager.unlockAll().then(success => {
                     if (success) {
                         console.log('🔓 Todos los MP3s desbloqueados para iOS');
-                        // Luego reproducir el audio de activación
+                        // Reproducir el audio de activación
                         this.audioManager.play('system', 'audio_activado');
                     } else {
                         console.log('⚠️ No se pudieron desbloquear MP3s, usando fallback');
@@ -1026,6 +1027,8 @@ class TelemedicinePatient {
                 }).catch(() => {
                     console.log('⚠️ Error desbloqueando MP3s, usando fallback');
                 });
+            } else {
+                console.log('⚠️ AudioManager no listo, usando solo speechSynthesis');
             }
 
             // Marcar como activado
@@ -1105,18 +1108,27 @@ class TelemedicinePatient {
             this.audioManager.onLoadComplete = () => {
                 console.log('✅ Todos los audios pre-cargados y listos');
                 this.showMessage('🔊 Audios cargados correctamente');
+
+                // IMPORTANTE: Mostrar botón de activación solo cuando los MP3s estén listos
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                if (isMobile && !this.audioActivated && this.audioActivationPanel) {
+                    this.audioActivationPanel.style.display = 'block';
+                    if (this.activateAudioBtn) {
+                        this.activateAudioBtn.textContent = '🔊 Activar Audio de Instrucciones';
+                    }
+                }
             };
 
             // Iniciar pre-carga
             this.audioManager.initialize().catch(err => {
                 console.warn('⚠️ Error pre-cargando audios, usando fallback:', err);
-            });
-        }
 
-        // Mostrar panel de activación de audio en móviles al conectarse
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        if (isMobile && !this.audioActivated && this.audioActivationPanel) {
-            this.audioActivationPanel.style.display = 'block';
+                // Si falla la carga, mostrar panel igualmente (usará fallback)
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                if (isMobile && !this.audioActivated && this.audioActivationPanel) {
+                    this.audioActivationPanel.style.display = 'block';
+                }
+            });
         }
     }
 
