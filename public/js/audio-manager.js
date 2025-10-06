@@ -105,33 +105,37 @@ class AudioManager {
 
     /**
      * Desbloquear todos los audios en iOS (debe llamarse en interacción de usuario)
+     * Pausar síncronamente ANTES de que empiece a reproducirse
      */
-    async unlockAll() {
+    unlockAll() {
         if (!this.isLoaded) {
             console.log('⏳ AudioManager: Esperando pre-carga para desbloquear');
-            return false;
+            return Promise.resolve(false);
         }
 
         console.log('🔓 Desbloqueando todos los audios para iOS...');
         let unlockedCount = 0;
 
+        // Iterar y pausar INMEDIATAMENTE después de play()
         for (const [url, audio] of this.audioCache.entries()) {
             try {
-                const originalVolume = audio.volume;
-                audio.volume = 0; // Silenciar
+                audio.volume = 0; // Silenciar por si acaso
                 audio.currentTime = 0;
-                await audio.play();
-                await audio.pause();
-                audio.volume = originalVolume; // Restaurar volumen
-                audio.currentTime = 0;
+
+                // Invocar play() y pausar EN LA MISMA LÍNEA (síncrono)
+                audio.play().catch(() => {}); // Ignorar errores
+                audio.pause(); // Pausar inmediatamente (síncrono)
+                audio.currentTime = 0; // Reset
+                audio.volume = 1.0; // Restaurar volumen
+
                 unlockedCount++;
             } catch (err) {
                 // Ignorar errores individuales
             }
         }
 
-        console.log(`✅ ${unlockedCount}/${this.audioCache.size} audios desbloqueados`);
-        return unlockedCount > 0;
+        console.log(`✅ ${unlockedCount}/${this.audioCache.size} audios desbloqueados (silenciosamente)`);
+        return Promise.resolve(unlockedCount > 0);
     }
 
     /**
