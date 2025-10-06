@@ -479,20 +479,28 @@ class TelemedicinePatient {
 
                 // ✅ NUEVO: Enviar por WebRTC si está disponible, sino por Socket.io
                 if (this.dataChannelReady && this.dataChannel.readyState === 'open') {
-                    // WebRTC Data Channel tiene límite ~16KB
-                    // Reducir precisión de landmarks para evitar truncamiento
+                    // WebRTC: Enviar landmarks solo 1 de cada 3 frames (10 FPS)
+                    // Métricas se envían en todos los frames (30 FPS)
+                    const shouldSendLandmarks = this.transmissionStats.frameCount % 3 === 0;
+
                     const compactData = {
                         sessionCode: this.sessionCode,
-                        landmarks: landmarks.map(lm => ({
-                            x: parseFloat(lm.x.toFixed(4)),
-                            y: parseFloat(lm.y.toFixed(4)),
-                            z: parseFloat(lm.z.toFixed(4)),
-                            visibility: parseFloat(lm.visibility.toFixed(3))
-                        })),
+                        landmarks: shouldSendLandmarks ? landmarks.map(lm => ({
+                            x: parseFloat(lm.x.toFixed(3)),
+                            y: parseFloat(lm.y.toFixed(3)),
+                            z: parseFloat(lm.z.toFixed(3)),
+                            visibility: parseFloat(lm.visibility.toFixed(2))
+                        })) : null,
                         metrics: this.currentMetrics,
                         timestamp: Date.now()
                     };
-                    this.dataChannel.send(JSON.stringify(compactData));
+
+                    try {
+                        this.dataChannel.send(JSON.stringify(compactData));
+                    } catch (err) {
+                        console.warn('⚠️ WebRTC send error, fallback Socket.io');
+                        this.socket.emit('pose-data', dataToSend);
+                    }
                 } else {
                     // Fallback a Socket.io mientras se establece WebRTC
                     this.socket.emit('pose-data', dataToSend);

@@ -850,8 +850,10 @@ class TelemedicineDoctor {
         // Actualizar estadísticas de transmisión
         this.updateTransmissionStats(timestamp);
 
-        // Dibujar pose en canvas
-        this.drawPoseOnCanvas(landmarks);
+        // Dibujar pose en canvas (solo si landmarks están presentes)
+        if (landmarks && landmarks.length > 0) {
+            this.drawPoseOnCanvas(landmarks);
+        }
 
         // Actualizar métricas en interfaz
         this.updateMetricsDisplay();
