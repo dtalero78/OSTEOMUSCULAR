@@ -915,7 +915,10 @@ class TelemedicinePatient {
                 this.audioManager.play(audioData.category, audioData.key).then(success => {
                     if (!success) {
                         // MP3 falló (bloqueado por navegador), usar fallback
-                        console.log(`🔊 MP3 bloqueado, usando fallback speechSynthesis`);
+                        // Solo log si hay ?debug en URL
+                        if (window.location.search.includes('debug')) {
+                            console.log(`🔊 MP3 bloqueado, usando fallback speechSynthesis`);
+                        }
                         this.useSpeechSynthesis(text);
                     }
                 });
@@ -959,7 +962,10 @@ class TelemedicinePatient {
                 utterance.voice = spanishVoice;
             }
 
-            console.log(`🔊 Fallback speechSynthesis: "${text.substring(0, 30)}..." (${spanishVoice?.lang || 'default'})`);
+            // Solo log en modo debug
+            if (window.location.search.includes('debug')) {
+                console.log(`🔊 Fallback speechSynthesis: "${text.substring(0, 30)}..." (${spanishVoice?.lang || 'default'})`);
+            }
             this.speechSynthesis.speak(utterance);
         };
 
@@ -1005,6 +1011,20 @@ class TelemedicinePatient {
 
             // Reproducir el test utterance
             this.speechSynthesis.speak(testUtterance);
+
+            // DESBLOQUEAR MP3s: Reproducir un audio silencioso del AudioManager
+            if (this.audioManager && this.audioManager.isReady()) {
+                // Intentar reproducir el primer audio disponible en volumen 0 para desbloquear
+                this.audioManager.play('system', 'audio_activado').then(success => {
+                    if (success) {
+                        console.log('✅ MP3s desbloqueados correctamente');
+                    } else {
+                        console.log('⚠️ MP3s aún bloqueados, usando fallback');
+                    }
+                }).catch(() => {
+                    // Ignorar error, fallback funcionará
+                });
+            }
 
             // Marcar como activado
             this.audioActivated = true;
