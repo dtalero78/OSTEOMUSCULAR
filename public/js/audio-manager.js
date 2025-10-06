@@ -108,32 +108,36 @@ class AudioManager {
      * @param {string} category - 'system', 'exam', 'guided', 'instructions'
      * @param {string} key - clave del audio en el mapa
      */
-    play(category, key) {
+    async play(category, key) {
         if (!this.usePreloaded || !this.isLoaded) {
             console.log(`🔊 AudioManager: Pre-carga no lista, usando fallback`);
-            return null;
+            return false;
         }
 
         const url = this.audioMap?.[category]?.[key];
         if (!url) {
             console.warn(`⚠️ AudioManager: No encontrado ${category}.${key}`);
-            return null;
+            return false;
         }
 
         const audio = this.audioCache.get(url);
         if (!audio) {
             console.warn(`⚠️ AudioManager: Audio no en cache ${url}`);
-            return null;
+            return false;
         }
 
         // En iOS, no podemos clonar. Reiniciamos y reproducimos el mismo elemento
         audio.currentTime = 0; // Reiniciar al inicio
-        audio.play().catch(err => {
-            console.error('Error reproduciendo audio:', err);
-        });
 
-        console.log(`🔊 Reproduciendo: ${category}.${key}`);
-        return audio;
+        try {
+            await audio.play();
+            console.log(`✅ MP3 reproducido: ${category}.${key}`);
+            return true; // Éxito
+        } catch (err) {
+            // iOS Safari bloquea autoplay - retornar false para fallback
+            console.warn(`⚠️ MP3 bloqueado (${err.name}), usando fallback`);
+            return false;
+        }
     }
 
     /**
