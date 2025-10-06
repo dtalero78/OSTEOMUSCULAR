@@ -68,12 +68,21 @@ class AudioManager {
      */
     async preloadAll(urls) {
         const promises = urls.map((url, index) =>
-            this.preloadAudio(url).then(() => {
-                const progress = ((index + 1) / urls.length) * 100;
-                if (this.onLoadProgress) {
-                    this.onLoadProgress(progress, index + 1, urls.length);
-                }
-            })
+            this.preloadAudio(url)
+                .then(() => {
+                    const progress = ((index + 1) / urls.length) * 100;
+                    if (this.onLoadProgress) {
+                        this.onLoadProgress(progress, index + 1, urls.length);
+                    }
+                })
+                .catch((err) => {
+                    // NO detener carga completa si un audio falla
+                    console.warn(`  ⚠️ Omitido: ${url}`);
+                    const progress = ((index + 1) / urls.length) * 100;
+                    if (this.onLoadProgress) {
+                        this.onLoadProgress(progress, index + 1, urls.length);
+                    }
+                })
         );
 
         await Promise.all(promises);
