@@ -480,7 +480,13 @@ class TelemedicinePatient {
                 // SOLUCIÓN HÍBRIDA: WebRTC para métricas, Socket.io para landmarks
                 // Esto evita problemas de truncamiento en Data Channel (límite 16KB)
 
-                if (this.dataChannelReady && this.dataChannel.readyState === 'open' && this.currentMetrics) {
+                // Validar que métricas estén completas (sin valores undefined)
+                const metricsValid = this.currentMetrics &&
+                                    this.currentMetrics.posture &&
+                                    this.currentMetrics.joints &&
+                                    this.currentMetrics.symmetry;
+
+                if (this.dataChannelReady && this.dataChannel.readyState === 'open' && metricsValid) {
                     // WebRTC: Solo métricas (pequeñas, ~1KB)
                     const metricsOnly = {
                         sessionCode: this.sessionCode,
