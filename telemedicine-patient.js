@@ -1017,8 +1017,8 @@ class TelemedicinePatient {
                 this.audioManager.unlockAll().then(success => {
                     if (success) {
                         console.log('🔓 Todos los MP3s desbloqueados para iOS');
-                        // Reproducir el audio de activación
-                        this.audioManager.play('system', 'audio_activado');
+                        // NO reproducir audio_activado aquí - speechSynthesis ya habló
+                        // Los MP3s están listos para las siguientes instrucciones
                     } else {
                         console.log('⚠️ No se pudieron desbloquear MP3s, usando fallback');
                     }
