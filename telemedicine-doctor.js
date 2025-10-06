@@ -406,11 +406,11 @@ class TelemedicineDoctor {
 
                         // Si tiene métricas, actualizar (landmarks vienen por Socket.io)
                         if (data.metrics) {
-                            this.handlePoseData({
-                                landmarks: this.lastLandmarks || [],
-                                metrics: data.metrics,
-                                timestamp: data.timestamp
-                            });
+                            this.handlePoseData(
+                                this.lastLandmarks || [],
+                                data.metrics,
+                                data.timestamp
+                            );
                         }
                     } catch (error) {
                         console.error('❌ Error en WebRTC data:', error.message);
