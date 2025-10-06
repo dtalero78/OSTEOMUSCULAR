@@ -874,20 +874,19 @@ class TelemedicinePatient {
         if (this.audioManager && this.audioManager.isReady() && typeof findAudioForText === 'function') {
             const audioData = findAudioForText(text);
             if (audioData) {
+                // Intentar reproducir MP3, con fallback automático
                 this.audioManager.play(audioData.category, audioData.key).then(success => {
-                    if (success) {
-                        console.log(`✅ MP3 reproducido: ${audioData.category}.${audioData.key}`);
-                    } else {
-                        // Fallback automático a speechSynthesis
-                        console.log(`🔊 Fallback a speechSynthesis para: "${text.substring(0, 30)}..."`);
+                    if (!success) {
+                        // MP3 falló (bloqueado por navegador), usar fallback
+                        console.log(`🔊 MP3 bloqueado, usando fallback speechSynthesis`);
                         this.useSpeechSynthesis(text);
                     }
                 });
-                return; // No bloquear ejecución
+                return; // Evitar ejecutar fallback inmediato
             }
         }
 
-        // FALLBACK: Si llegamos aquí, audioData no existía o audioManager no está listo
+        // FALLBACK: AudioManager no listo o audio no encontrado
         this.useSpeechSynthesis(text);
     }
 

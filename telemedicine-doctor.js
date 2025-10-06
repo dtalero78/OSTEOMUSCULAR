@@ -390,10 +390,16 @@ class TelemedicineDoctor {
                 dataChannel.onmessage = (event) => {
                     // Parsear datos y procesarlos con la misma función existente
                     try {
+                        // Validar que event.data no esté vacío
+                        if (!event.data || event.data === 'undefined' || event.data === 'null') {
+                            console.warn('⚠️ Datos vacíos recibidos, ignorando');
+                            return;
+                        }
+
                         const poseData = JSON.parse(event.data);
                         this.handlePoseData(poseData);
                     } catch (error) {
-                        console.error('❌ Error parseando pose data:', error);
+                        console.error('❌ Error parseando pose data:', error, 'Data:', event.data?.substring(0, 100));
                     }
                 };
 
@@ -675,9 +681,21 @@ class TelemedicineDoctor {
     }
 
     stabilizeAndCaptureMetrics() {
+        // Validar que hay métricas disponibles
+        if (!this.currentMetrics && this.metricsBuffer.length === 0) {
+            console.error('❌ No hay métricas disponibles para capturar');
+            return;
+        }
+
         if (this.metricsBuffer.length < 10) {
             console.warn('⚠️ Buffer insuficiente para estabilizar, usando métricas actuales');
-            this.capturedMetrics = JSON.parse(JSON.stringify(this.currentMetrics));
+            // Validar que currentMetrics existe antes de clonar
+            if (this.currentMetrics) {
+                this.capturedMetrics = JSON.parse(JSON.stringify(this.currentMetrics));
+            } else {
+                console.error('❌ currentMetrics es undefined, no se puede capturar');
+                return;
+            }
         } else {
             console.log(`📊 Estabilizando métricas de ${this.metricsBuffer.length} frames`);
             this.capturedMetrics = this.calculateStabilizedMetrics();
@@ -1090,6 +1108,13 @@ class TelemedicineDoctor {
     generateRecommendations(metrics = null) {
         const recommendations = [];
         const metricsToUse = metrics || this.capturedMetrics || this.currentMetrics;
+
+        // Validar que hay métricas disponibles
+        if (!metricsToUse || !metricsToUse.posture || !metricsToUse.symmetry) {
+            console.warn('⚠️ No hay métricas disponibles para generar recomendaciones');
+            recommendations.push('ℹ️ No se pudieron generar recomendaciones - datos insuficientes');
+            return recommendations;
+        }
 
         // Recomendaciones basadas en alineación cervical
         if (metricsToUse.posture.cervicalAlignment > 15) {
