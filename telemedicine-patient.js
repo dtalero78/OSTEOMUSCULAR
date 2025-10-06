@@ -118,6 +118,7 @@ class TelemedicinePatient {
 
         // Elementos de interfaz
         this.doctorInstructions = document.getElementById('doctorInstructions');
+        this.currentInstructionBanner = document.getElementById('currentInstructionBanner');
 
         // Elementos de instrucciones guiadas
         this.guidedInstructionsOverlay = document.getElementById('guidedInstructionsOverlay');
@@ -772,6 +773,8 @@ class TelemedicinePatient {
                         <strong>${data.title || 'Instrucción del Médico'}:</strong> ${data.text}
                     </div>
                 `;
+                // Actualizar banner móvil
+                this.updateInstructionBanner(data.text);
                 if (this.audioEnabled && data.text) {
                     this.speak(data.text);
                 }
@@ -783,6 +786,8 @@ class TelemedicinePatient {
 
             case 'position_feedback':
                 this.doctorInstructions.innerHTML = `<p><strong>Posicionamiento:</strong> ${data.message}</p>`;
+                // Actualizar banner móvil
+                this.updateInstructionBanner(data.message);
                 if (this.audioEnabled) {
                     this.speak(data.message);
                 }
@@ -807,14 +812,17 @@ class TelemedicinePatient {
     }
 
     async showCountdown(seconds) {
-        this.countdownOverlay.classList.remove('hidden');
+        this.countdownOverlay.style.display = 'block';
 
         for (let i = seconds; i > 0; i--) {
             this.countdownOverlay.textContent = i.toString();
+            // También actualizar banner móvil
+            this.updateInstructionBanner(`Comenzando en ${i}...`);
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
 
-        this.countdownOverlay.classList.add('hidden');
+        this.countdownOverlay.style.display = 'none';
+        this.updateInstructionBanner('Manténgase en posición');
     }
 
     async showLargeCountdown(seconds) {
@@ -859,6 +867,9 @@ class TelemedicinePatient {
                 <div style="font-size: 24px; margin-top: 10px; color: #5ebd6d;">Prepárese y quédese quieto</div>
             `;
 
+            // Actualizar banner móvil también
+            this.updateInstructionBanner(`Prepárese - Comenzando en ${i}`);
+
             // Efecto de pulso
             countdownBigOverlay.style.transform = 'translate(-50%, -50%) scale(1.1)';
             setTimeout(() => {
@@ -873,6 +884,7 @@ class TelemedicinePatient {
             <div style="font-size: 80px; color: #5ebd6d;">✓</div>
             <div style="font-size: 36px; margin-top: 20px; color: #5ebd6d;">¡Listo!</div>
         `;
+        this.updateInstructionBanner('¡Listo! - Manténgase quieto');
 
         await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -1196,6 +1208,9 @@ class TelemedicinePatient {
         this.guidedInstructionText.textContent = data.message || 'Excelente trabajo, secuencia finalizada';
         this.stepCounter.textContent = 'Finalizado';
 
+        // Actualizar banner móvil
+        this.updateInstructionBanner('Secuencia completada - Excelente trabajo');
+
         // Completar barra de progreso
         this.guidedProgressBar.style.width = '100%';
 
@@ -1207,6 +1222,8 @@ class TelemedicinePatient {
         // Ocultar overlay después de unos segundos
         setTimeout(() => {
             this.hideGuidedInstructions();
+            // Resetear banner después de completar
+            this.updateInstructionBanner('Esperando instrucciones del médico');
         }, 3000);
 
         this.showMessage('🎉 Secuencia de examen completada exitosamente');
@@ -1225,9 +1242,20 @@ class TelemedicinePatient {
         this.guidedInstructionText.textContent = instruction.text;
         this.stepCounter.textContent = `Paso ${stepNumber} de ${totalSteps}`;
 
+        // Actualizar banner móvil con instrucción simple (sin emojis)
+        this.updateInstructionBanner(instruction.text);
+
         // Si es el primer paso con countdown, mostrar contador grande
         if (instruction.showCountdown && stepNumber === 1) {
             this.showLargeCountdown(instruction.duration / 1000);
+        }
+    }
+
+    updateInstructionBanner(text) {
+        if (this.currentInstructionBanner) {
+            // Remover emojis y simplificar el texto
+            const cleanText = text.replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+            this.currentInstructionBanner.textContent = cleanText;
         }
     }
 
