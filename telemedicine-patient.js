@@ -479,8 +479,20 @@ class TelemedicinePatient {
 
                 // ✅ NUEVO: Enviar por WebRTC si está disponible, sino por Socket.io
                 if (this.dataChannelReady && this.dataChannel.readyState === 'open') {
-                    // WebRTC P2P (no consume recursos del servidor)
-                    this.dataChannel.send(JSON.stringify(dataToSend));
+                    // WebRTC Data Channel tiene límite ~16KB
+                    // Reducir precisión de landmarks para evitar truncamiento
+                    const compactData = {
+                        sessionCode: this.sessionCode,
+                        landmarks: landmarks.map(lm => ({
+                            x: parseFloat(lm.x.toFixed(4)),
+                            y: parseFloat(lm.y.toFixed(4)),
+                            z: parseFloat(lm.z.toFixed(4)),
+                            visibility: parseFloat(lm.visibility.toFixed(3))
+                        })),
+                        metrics: this.currentMetrics,
+                        timestamp: Date.now()
+                    };
+                    this.dataChannel.send(JSON.stringify(compactData));
                 } else {
                     // Fallback a Socket.io mientras se establece WebRTC
                     this.socket.emit('pose-data', dataToSend);
