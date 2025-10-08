@@ -177,7 +177,6 @@ class TelemedicineDoctor {
         // Elementos de información del paciente
         this.patientInfo = document.getElementById('patientInfo');
         this.patientName = document.getElementById('patientName');
-        this.patientAge = document.getElementById('patientAge');
         this.connectionTime = document.getElementById('connectionTime');
 
         // Elementos de video
@@ -1381,7 +1380,6 @@ class TelemedicineDoctor {
 
     showPatientInfo() {
         this.patientName.textContent = this.patientData.name;
-        this.patientAge.textContent = this.patientData.age;
         this.connectionTime.textContent = new Date().toLocaleTimeString();
         this.patientInfo.classList.remove('hidden');
     }

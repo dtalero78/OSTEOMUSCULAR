@@ -69,6 +69,9 @@ class TelemedicinePatient {
             // Inicializar elementos DOM
             this.initializeDOMElements();
 
+            // Auto-completar nombre desde URL
+            this.loadPatientDataFromURL();
+
             // Configurar event listeners
             this.setupEventListeners();
 
@@ -86,6 +89,35 @@ class TelemedicinePatient {
         }
     }
 
+    loadPatientDataFromURL() {
+        // Leer parámetros de URL
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Opción 1: ?nombre=Juan&apellido=Pérez
+        const nombre = urlParams.get('nombre');
+        const apellido = urlParams.get('apellido');
+
+        // Opción 2: ?fullname=Juan Pérez (alternativa)
+        const fullname = urlParams.get('fullname');
+
+        if (fullname) {
+            // Si viene fullname completo
+            this.patientNameInput.value = fullname;
+        } else if (nombre && apellido) {
+            // Si vienen nombre y apellido separados
+            this.patientNameInput.value = `${nombre} ${apellido}`;
+        } else if (nombre) {
+            // Si solo viene nombre
+            this.patientNameInput.value = nombre;
+        }
+
+        // Auto-completar código de sesión si viene en URL
+        const sessionCode = urlParams.get('session') || urlParams.get('codigo');
+        if (sessionCode) {
+            this.sessionCodeInput.value = sessionCode.toUpperCase();
+        }
+    }
+
     initializeDOMElements() {
         // Pantallas
         this.loginScreen = document.getElementById('loginScreen');
@@ -95,7 +127,6 @@ class TelemedicinePatient {
         this.loginForm = document.getElementById('loginForm');
         this.sessionCodeInput = document.getElementById('sessionCode');
         this.patientNameInput = document.getElementById('patientName');
-        this.patientAgeInput = document.getElementById('patientAge');
         this.connectBtn = document.getElementById('connectBtn');
         this.connectionStatus = document.getElementById('connectionStatus');
 
@@ -292,7 +323,6 @@ class TelemedicinePatient {
     connectToDoctor() {
         const sessionCode = this.sessionCodeInput.value.trim();
         const patientName = this.patientNameInput.value.trim();
-        const patientAge = this.patientAgeInput.value.trim();
 
         if (!sessionCode || sessionCode.length !== 6) {
             alert('Por favor ingrese un código de sesión válido de 6 caracteres');
@@ -306,7 +336,6 @@ class TelemedicinePatient {
 
         this.patientData = {
             name: patientName,
-            age: patientAge || 'No especificada',
             sessionId: Date.now()
         };
 
