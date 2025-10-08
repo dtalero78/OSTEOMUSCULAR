@@ -52,7 +52,76 @@ app.get('/medico', (req, res) => {
     res.sendFile(path.join(__dirname, 'medico.html'));
 });
 
-// ✅ NUEVO: Endpoint para ver métricas de conexión
+// ✅ Endpoint /health - Monitoreo de recursos del servidor
+app.get('/health', (req, res) => {
+    const memoryUsage = process.memoryUsage();
+    const uptime = process.uptime();
+    const activeSessionsCount = activeSessions.size;
+    const connectedClients = io.engine.clientsCount;
+
+    // Calcular MB de memoria
+    const memoryMB = {
+        rss: (memoryUsage.rss / 1024 / 1024).toFixed(2),           // Resident Set Size
+        heapTotal: (memoryUsage.heapTotal / 1024 / 1024).toFixed(2),
+        heapUsed: (memoryUsage.heapUsed / 1024 / 1024).toFixed(2),
+        external: (memoryUsage.external / 1024 / 1024).toFixed(2)
+    };
+
+    // Calcular % de uso de heap
+    const heapUsagePercent = ((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100).toFixed(1);
+
+    // Formato de uptime
+    const uptimeFormatted = {
+        days: Math.floor(uptime / 86400),
+        hours: Math.floor((uptime % 86400) / 3600),
+        minutes: Math.floor((uptime % 3600) / 60),
+        seconds: Math.floor(uptime % 60)
+    };
+
+    // Estado del servidor
+    const status = {
+        healthy: activeSessionsCount < 60 && parseFloat(memoryMB.heapUsed) < 400,
+        serverTime: new Date().toISOString(),
+        uptime: uptimeFormatted,
+        uptimeSeconds: Math.floor(uptime)
+    };
+
+    // Capacidad estimada
+    const estimatedCapacity = {
+        currentSessions: activeSessionsCount,
+        maxRecommended: 60,
+        availableSlots: Math.max(0, 60 - activeSessionsCount),
+        utilizationPercent: ((activeSessionsCount / 60) * 100).toFixed(1)
+    };
+
+    res.json({
+        status: status.healthy ? 'healthy' : 'warning',
+        timestamp: status.serverTime,
+        uptime: status.uptime,
+        resources: {
+            memory: {
+                used: `${memoryMB.heapUsed} MB`,
+                total: `${memoryMB.heapTotal} MB`,
+                rss: `${memoryMB.rss} MB`,
+                usagePercent: `${heapUsagePercent}%`
+            },
+            sessions: estimatedCapacity,
+            clients: {
+                connected: connectedClients,
+                activeSessions: activeSessionsCount,
+                waitingDoctors: waitingDoctors.size,
+                waitingPatients: waitingPatients.size
+            }
+        },
+        details: {
+            nodeVersion: process.version,
+            platform: process.platform,
+            pid: process.pid
+        }
+    });
+});
+
+// ✅ Endpoint /metrics - Métricas de conexión WebRTC vs Socket.io
 app.get('/metrics', (req, res) => {
     const activeSessionsCount = activeSessions.size;
     const webrtcPercentage = connectionMetrics.totalPoseDataMessages > 0
