@@ -61,6 +61,46 @@ npm run dev
 # - Doctor interface: http://localhost:3000/medico
 # - Patient interface: http://localhost:3000/paciente
 # - Original app: http://localhost:3000
+# - Health monitor: http://localhost:3000/health
+# - Metrics dashboard: http://localhost:3000/metrics
+```
+
+### Monitoring Endpoints
+
+**Health Check** (`GET /health`):
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-10-08T22:32:29.046Z",
+  "uptime": { "days": 0, "hours": 0, "minutes": 0, "seconds": 9 },
+  "resources": {
+    "memory": {
+      "used": "8.18 MB",
+      "total": "10.06 MB",
+      "rss": "58.14 MB",
+      "usagePercent": "81.3%"
+    },
+    "sessions": {
+      "currentSessions": 0,
+      "maxRecommended": 60,
+      "availableSlots": 60,
+      "utilizationPercent": "0.0"
+    },
+    "clients": {
+      "connected": 0,
+      "activeSessions": 0,
+      "waitingDoctors": 0,
+      "waitingPatients": 0
+    }
+  }
+}
+```
+
+**Health Criteria**:
+- `healthy`: < 60 sessions AND < 400 MB heap usage
+- `warning`: ≥ 60 sessions OR ≥ 400 MB heap usage
+
+**Metrics** (`GET /metrics`): WebRTC vs Socket.io statistics and active sessions list
 ```
 
 ### Original Static Application (Legacy)
