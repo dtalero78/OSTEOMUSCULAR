@@ -219,13 +219,11 @@ class TelemedicineDoctor {
         this.transmissionStatsEl = document.getElementById('transmissionStats');
         this.doctorNotes = document.getElementById('doctorNotes');
         this.generateReportBtn = document.getElementById('generateReportBtn');
+        this.generatePDFBtn = document.getElementById('generatePDFBtn');
         this.endSessionBtn = document.getElementById('endSessionBtn');
     }
 
     setupEventListeners() {
-        console.log('🔧 Configurando event listeners...');
-        console.log('   - startGuidedBtn existe:', !!this.startGuidedBtn);
-
         // Crear sesión
         this.createSessionBtn.addEventListener('click', () => this.createSession());
 
@@ -234,7 +232,6 @@ class TelemedicineDoctor {
 
         if (this.startGuidedBtn) {
             this.startGuidedBtn.addEventListener('click', () => {
-                console.log('🖱️ Click detectado en startGuidedBtn');
                 this.startGuidedSequence();
             });
         } else {
@@ -267,6 +264,7 @@ class TelemedicineDoctor {
 
         // Acciones finales
         this.generateReportBtn.addEventListener('click', () => this.generateReport());
+        this.generatePDFBtn.addEventListener('click', () => this.generatePDFReport());
         this.endSessionBtn.addEventListener('click', () => this.endSession());
     }
 
@@ -367,9 +365,6 @@ class TelemedicineDoctor {
 
     async handleWebRTCOffer(offer) {
         try {
-            console.log('🔗 Configurando WebRTC en lado del médico...');
-            console.log('📋 Offer recibido:', offer?.type, offer?.sdp?.substring(0, 50) + '...');
-
             if (!this.sessionCode) {
                 console.error('❌ Médico no tiene sessionCode activo');
                 return;
@@ -380,18 +375,14 @@ class TelemedicineDoctor {
                 return;
             }
 
-            console.log('✅ Médico listo para aceptar WebRTC con sesión:', this.sessionCode);
-
             // Crear peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
 
             // ✅ NUEVO: Escuchar data channel del paciente
             this.peerConnection.ondatachannel = (event) => {
                 const dataChannel = event.channel;
-                console.log('✅ Data channel recibido del paciente');
 
                 dataChannel.onopen = () => {
-                    console.log('✅ Data channel abierto - recibiendo pose data por WebRTC P2P');
                     this.dataChannelReady = true;
                 };
 
@@ -418,7 +409,6 @@ class TelemedicineDoctor {
                 };
 
                 dataChannel.onclose = () => {
-                    console.log('⚠️ Data channel cerrado');
                     this.dataChannelReady = false;
                 };
 
@@ -429,7 +419,6 @@ class TelemedicineDoctor {
 
             // Manejar tracks entrantes (video del paciente)
             this.peerConnection.ontrack = (event) => {
-                console.log('📹 Stream recibido del paciente:', event.streams[0]);
                 this.remoteVideo.srcObject = event.streams[0];
 
                 // Mostrar video y ocultar placeholder
@@ -456,7 +445,6 @@ class TelemedicineDoctor {
                     const width = this.remoteVideo.videoWidth;
                     const height = this.remoteVideo.videoHeight;
                     this.videoInfo.textContent = `Resolución: ${width}x${height} | En vivo`;
-                    console.log('✅ Metadata del video cargada:', width, 'x', height);
 
                     // Intentar reproducir inmediatamente
                     this.playRemoteVideo();
@@ -473,11 +461,9 @@ class TelemedicineDoctor {
                 if (playPromise !== undefined) {
                     playPromise
                         .then(() => {
-                            console.log('✅ Video del paciente reproduciéndose automáticamente');
+                            // Video reproduciéndose correctamente
                         })
                         .catch(err => {
-                            console.log('⚠️ Autoplay bloqueado en móvil:', err.message);
-
                             // Detectar si es móvil
                             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -492,7 +478,6 @@ class TelemedicineDoctor {
             // Manejar ICE candidates
             this.peerConnection.onicecandidate = (event) => {
                 if (event.candidate) {
-                    console.log('🧊 Enviando ICE candidate al paciente');
                     this.socket.emit('webrtc-ice-candidate', {
                         sessionCode: this.sessionCode,
                         candidate: event.candidate
@@ -502,10 +487,7 @@ class TelemedicineDoctor {
 
             // Manejar estado de conexión
             this.peerConnection.onconnectionstatechange = () => {
-                console.log('🔗 Estado WebRTC:', this.peerConnection.connectionState);
-                if (this.peerConnection.connectionState === 'connected') {
-                    console.log('✅ Video streaming conectado');
-                } else if (this.peerConnection.connectionState === 'failed') {
+                if (this.peerConnection.connectionState === 'failed') {
                     console.error('❌ Conexión WebRTC falló');
                     if (this.videoPlaceholder) {
                         this.videoPlaceholder.innerHTML = '<div style="text-align: center; color: #f44336;">❌ Error de conexión<br><small>Intentando reconectar...</small></div>';
@@ -522,13 +504,10 @@ class TelemedicineDoctor {
             await this.peerConnection.setLocalDescription(answer);
 
             // Enviar answer al paciente
-            console.log('📤 Enviando WebRTC answer al paciente');
-            console.log('📋 Answer SDP:', answer.type, answer.sdp?.substring(0, 50) + '...');
             this.socket.emit('webrtc-answer', {
                 sessionCode: this.sessionCode,
                 answer: answer
             });
-            console.log('✅ Answer enviado con sessionCode:', this.sessionCode);
 
         } catch (error) {
             console.error('❌ Error configurando WebRTC:', error);
@@ -548,15 +527,12 @@ class TelemedicineDoctor {
             sessionId: Date.now()
         };
 
-        console.log('🚀 Creando sesión médica...');
-
         this.socket.emit('doctor-register', this.doctorData);
     }
 
     startExam() {
         if (!this.patientConnected) return;
 
-        console.log('▶️ Iniciando examen...');
         this.isExamRunning = true;
 
         // Enviar comando al paciente
@@ -574,7 +550,6 @@ class TelemedicineDoctor {
     }
 
     stopExam() {
-        console.log('⏹️ Deteniendo examen...');
         this.isExamRunning = false;
 
         // Enviar comando al paciente
@@ -593,8 +568,6 @@ class TelemedicineDoctor {
     startCountdown(seconds = 5) {
         if (!this.patientConnected) return;
 
-        console.log(`⏰ Iniciando cuenta regresiva de ${seconds} segundos`);
-
         this.sendCommand('countdown', {
             seconds: seconds,
             message: `Iniciando en ${seconds} segundos`
@@ -602,15 +575,9 @@ class TelemedicineDoctor {
     }
 
     startGuidedSequence() {
-        console.log('🔘 Botón Examen Guiado presionado');
-        console.log('   - Paciente conectado:', this.patientConnected);
-
         if (!this.patientConnected) {
-            console.log('❌ No se puede iniciar: paciente no conectado');
             return;
         }
-
-        console.log(`🎯 Iniciando examen guiado completo`);
 
         // Resetear sistema de instrucciones
         this.instructionSystem.currentStep = 0;
@@ -702,7 +669,6 @@ class TelemedicineDoctor {
         }
 
         if (this.metricsBuffer.length < 10) {
-            console.warn('⚠️ Buffer insuficiente para estabilizar, usando métricas actuales');
             // Validar que currentMetrics existe antes de clonar
             if (this.currentMetrics) {
                 this.capturedMetrics = JSON.parse(JSON.stringify(this.currentMetrics));
@@ -711,7 +677,6 @@ class TelemedicineDoctor {
                 return;
             }
         } else {
-            console.log(`📊 Estabilizando métricas de ${this.metricsBuffer.length} frames`);
             this.capturedMetrics = this.calculateStabilizedMetrics();
         }
 
@@ -771,7 +736,6 @@ class TelemedicineDoctor {
             });
         });
 
-        console.log('📈 Métricas estabilizadas (promedio de', bufferLength, 'frames):', stabilized);
         return stabilized;
     }
 
@@ -791,7 +755,6 @@ class TelemedicineDoctor {
         if (!this.patientConnected) return;
 
         this.sendCommand(type, data);
-        console.log('📋 Instrucción enviada:', data.text);
     }
 
     sendCommand(command, data) {
@@ -811,8 +774,6 @@ class TelemedicineDoctor {
         const metricsToUse = this.capturedMetrics || this.currentMetrics;
         const metricsSource = this.capturedMetrics ? 'estabilizadas' : 'instantáneas';
 
-        console.log(`📸 Capturando snapshot médico con métricas ${metricsSource}...`);
-
         const snapshot = {
             id: Date.now(),
             timestamp: new Date().toISOString(),
@@ -825,13 +786,6 @@ class TelemedicineDoctor {
         };
 
         this.snapshots.push(snapshot);
-
-        console.log('📊 Snapshot capturado:', {
-            id: snapshot.id,
-            metricsSource: snapshot.metricsSource,
-            cervical: snapshot.metrics.posture.cervicalAlignment?.toFixed(1),
-            pelvic: snapshot.metrics.posture.pelvicTilt?.toFixed(1)
-        });
 
         // Enviar comando de captura al paciente
         this.sendCommand('capture_snapshot', {
@@ -855,15 +809,6 @@ class TelemedicineDoctor {
         // Guardar datos recibidos
         this.receivedLandmarks = landmarks;
         this.currentMetrics = metrics;
-
-        // DEBUG: Log cada 30 frames para confirmar métricas
-        if (this.metricsBuffer.length % 30 === 0) {
-            console.log('✅ Métricas recibidas:', {
-                cervical: metrics.posture?.cervicalAlignment?.toFixed(2),
-                pelvic: metrics.posture?.pelvicTilt?.toFixed(2),
-                buffer: this.metricsBuffer.length
-            });
-        }
 
         // Agregar métricas al buffer para estabilización
         this.metricsBuffer.push({
@@ -904,7 +849,6 @@ class TelemedicineDoctor {
         this.noPatientMessage.innerHTML = '<h3>⏳ Esperando stream de datos del paciente...</h3>';
         this.noPatientMessage.style.display = 'flex';
 
-        console.log('📊 Canvas configurado para análisis de esqueleto:', this.canvas.width, 'x', this.canvas.height);
     }
 
     drawPoseOnCanvas(landmarks) {
@@ -1097,8 +1041,6 @@ class TelemedicineDoctor {
     }
 
     generateReport() {
-        console.log('📄 Generando informe médico...');
-
         // Usar métricas estabilizadas si están disponibles
         const metricsToUse = this.capturedMetrics || this.currentMetrics;
         const metricsSource = this.capturedMetrics ? 'estabilizadas (promediadas)' : 'instantáneas';
@@ -1119,12 +1061,6 @@ class TelemedicineDoctor {
             recommendations: this.generateRecommendations(metricsToUse)
         };
 
-        console.log(`📊 Reporte con métricas ${metricsSource}:`, {
-            cervical: report.currentMetrics.posture.cervicalAlignment?.toFixed(1),
-            pelvic: report.currentMetrics.posture.pelvicTilt?.toFixed(1),
-            lateral: report.currentMetrics.posture.lateralDeviation?.toFixed(1)
-        });
-
         // Crear y descargar archivo JSON
         const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -1132,8 +1068,244 @@ class TelemedicineDoctor {
         a.href = url;
         a.download = `informe_telemedicina_${this.patientData.name}_${Date.now()}.json`;
         a.click();
+    }
 
-        console.log('✅ Informe generado');
+    generatePDFReport() {
+        // Usar métricas estabilizadas si están disponibles
+        const metricsToUse = this.capturedMetrics || this.currentMetrics;
+        const metricsSource = this.capturedMetrics ? 'estabilizadas (promediadas)' : 'instantáneas';
+
+        if (!metricsToUse) {
+            alert('No hay métricas disponibles para generar el informe');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Configuración de colores
+        const primaryColor = [91, 141, 239]; // #5b8def
+        const textColor = [50, 50, 50];
+        const lightGray = [176, 179, 184];
+
+        let y = 20;
+
+        // ========== ENCABEZADO ==========
+        doc.setFillColor(...primaryColor);
+        doc.rect(0, 0, 210, 35, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('INFORME MÉDICO', 105, 15, { align: 'center' });
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Examen Osteomuscular Virtual - Telemedicina', 105, 25, { align: 'center' });
+
+        y = 45;
+        doc.setTextColor(...textColor);
+
+        // ========== INFORMACIÓN DE SESIÓN ==========
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Información de Sesión', 15, y);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Código de Sesión: ${this.sessionCode}`, 15, y);
+        y += 6;
+        doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, 15, y);
+        y += 6;
+        doc.text(`Hora: ${new Date().toLocaleTimeString('es-ES')}`, 15, y);
+        y += 6;
+        doc.text(`Origen de Métricas: ${metricsSource}`, 15, y);
+        y += 10;
+
+        // ========== INFORMACIÓN DEL PACIENTE ==========
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Datos del Paciente', 15, y);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Nombre: ${this.patientData.name}`, 15, y);
+        y += 6;
+        if (this.patientData.age) {
+            doc.text(`Edad: ${this.patientData.age} años`, 15, y);
+            y += 6;
+        }
+        y += 5;
+
+        // ========== INFORMACIÓN DEL MÉDICO ==========
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Médico Evaluador', 15, y);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Dr./Dra. ${this.doctorData.name}`, 15, y);
+        y += 10;
+
+        // ========== MÉTRICAS POSTURALES ==========
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Análisis Postural', 15, y);
+        y += 8;
+
+        // Tabla de postura
+        const posture = metricsToUse.posture;
+        this.addMetricRow(doc, y, 'Alineación Cervical', posture.cervicalAlignment.toFixed(2), '°',
+            posture.cervicalAlignment <= 10 ? '✓ Normal' : posture.cervicalAlignment <= 15 ? '⚠ Atención' : '✗ Alterado');
+        y += 8;
+        this.addMetricRow(doc, y, 'Inclinación Pélvica', posture.pelvicTilt.toFixed(2), '°',
+            posture.pelvicTilt <= 5 ? '✓ Normal' : '⚠ Alterado');
+        y += 8;
+        this.addMetricRow(doc, y, 'Desviación Lateral', posture.lateralDeviation.toFixed(2), 'mm',
+            posture.lateralDeviation <= 20 ? '✓ Normal' : posture.lateralDeviation <= 30 ? '⚠ Atención' : '✗ Alterado');
+        y += 12;
+
+        // ========== ÁNGULOS ARTICULARES ==========
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Ángulos Articulares', 15, y);
+        y += 8;
+
+        const joints = metricsToUse.joints;
+        this.addMetricRow(doc, y, 'Hombro Derecho', joints.rightShoulderAngle.toFixed(1), '°', '-');
+        y += 8;
+        this.addMetricRow(doc, y, 'Hombro Izquierdo', joints.leftShoulderAngle.toFixed(1), '°', '-');
+        y += 8;
+        this.addMetricRow(doc, y, 'Cadera Derecha', joints.rightHipAngle.toFixed(1), '°', '-');
+        y += 8;
+        this.addMetricRow(doc, y, 'Cadera Izquierda', joints.leftHipAngle.toFixed(1), '°', '-');
+        y += 12;
+
+        // ========== SIMETRÍA CORPORAL ==========
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Simetría Corporal', 15, y);
+        y += 8;
+
+        const symmetry = metricsToUse.symmetry;
+        this.addMetricRow(doc, y, 'Simetría de Hombros', symmetry.shoulderSymmetry.toFixed(1), '%',
+            symmetry.shoulderSymmetry >= 90 ? '✓ Normal' : symmetry.shoulderSymmetry >= 85 ? '⚠ Atención' : '✗ Alterado');
+        y += 8;
+        this.addMetricRow(doc, y, 'Simetría de Caderas', symmetry.hipSymmetry.toFixed(1), '%',
+            symmetry.hipSymmetry >= 90 ? '✓ Normal' : symmetry.hipSymmetry >= 85 ? '⚠ Atención' : '✗ Alterado');
+        y += 8;
+        this.addMetricRow(doc, y, 'Balance General', symmetry.overallBalance.toFixed(1), '%',
+            symmetry.overallBalance >= 80 ? '✓ Normal' : '⚠ Alterado');
+        y += 12;
+
+        // Nueva página si es necesario
+        if (y > 250) {
+            doc.addPage();
+            y = 20;
+        }
+
+        // ========== RECOMENDACIONES ==========
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Recomendaciones Clínicas', 15, y);
+        y += 8;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        const recommendations = this.generateRecommendations(metricsToUse);
+
+        recommendations.forEach((rec, index) => {
+            if (y > 270) {
+                doc.addPage();
+                y = 20;
+            }
+            const lines = doc.splitTextToSize(`${index + 1}. ${rec}`, 180);
+            doc.text(lines, 15, y);
+            y += lines.length * 5 + 3;
+        });
+
+        y += 5;
+
+        // ========== SNAPSHOTS CAPTURADOS ==========
+        if (this.snapshots.length > 0) {
+            if (y > 250) {
+                doc.addPage();
+                y = 20;
+            }
+
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Capturas Realizadas', 15, y);
+            y += 8;
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text(`Total de capturas: ${this.snapshots.length}`, 15, y);
+            y += 6;
+
+            this.snapshots.forEach((snapshot, index) => {
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+                const time = new Date(snapshot.timestamp).toLocaleTimeString('es-ES');
+                doc.text(`  • Captura ${index + 1}: ${time} (Métricas: ${snapshot.metricsSource})`, 15, y);
+                y += 6;
+            });
+            y += 5;
+        }
+
+        // ========== NOTAS DEL MÉDICO ==========
+        if (this.doctorNotes.value.trim()) {
+            if (y > 240) {
+                doc.addPage();
+                y = 20;
+            }
+
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text('Observaciones del Médico', 15, y);
+            y += 8;
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            const notesLines = doc.splitTextToSize(this.doctorNotes.value.trim(), 180);
+            notesLines.forEach(line => {
+                if (y > 280) {
+                    doc.addPage();
+                    y = 20;
+                }
+                doc.text(line, 15, y);
+                y += 5;
+            });
+        }
+
+        // ========== PIE DE PÁGINA ==========
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(...lightGray);
+            doc.text(`Página ${i} de ${pageCount}`, 105, 290, { align: 'center' });
+            doc.text('Informe generado por Examen Osteomuscular Virtual', 105, 285, { align: 'center' });
+        }
+
+        // Guardar PDF
+        const fileName = `Informe_${this.patientData.name.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
+        doc.save(fileName);
+    }
+
+    addMetricRow(doc, y, label, value, unit, status) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text(`${label}:`, 20, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${value}${unit}`, 100, y);
+        doc.setFont('helvetica', 'italic');
+        doc.text(status, 140, y);
     }
 
     generateRecommendations(metrics = null) {
@@ -1224,6 +1396,7 @@ class TelemedicineDoctor {
         this.countdownBtn.disabled = false;
         this.sendInstructionBtn.disabled = false;
         this.generateReportBtn.disabled = false;
+        this.generatePDFBtn.disabled = false;
         this.endSessionBtn.disabled = false;
     }
 
@@ -1249,8 +1422,6 @@ class TelemedicineDoctor {
     }
 
     endSession() {
-        console.log('🔚 Finalizando sesión...');
-
         this.socket.disconnect();
         this.resetSession();
 
@@ -1312,7 +1483,6 @@ class TelemedicineDoctor {
         playButton.addEventListener('click', () => {
             this.remoteVideo.play()
                 .then(() => {
-                    console.log('✅ Video del paciente reproduciéndose tras interacción del usuario');
                     playButton.remove();
                 })
                 .catch(err => {
@@ -1324,13 +1494,10 @@ class TelemedicineDoctor {
         const videoContainer = this.remoteVideo.parentElement;
         videoContainer.style.position = 'relative';
         videoContainer.appendChild(playButton);
-
-        console.log('🎬 Botón de play manual agregado para dispositivo móvil');
     }
 }
 
 // Inicializar cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('👨‍⚕️ Iniciando interfaz del médico...');
     window.telemedicineDoctor = new TelemedicineDoctor();
 });

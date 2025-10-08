@@ -334,7 +334,6 @@ class TelemedicinePatient {
 
             // Guardar el stream local para WebRTC
             this.localStream = stream;
-            console.log('💾 Stream local guardado para WebRTC');
 
             this.video.srcObject = stream;
 
@@ -347,7 +346,6 @@ class TelemedicinePatient {
                 if (this.analysisCanvas) {
                     this.analysisCanvas.width = this.video.videoWidth;
                     this.analysisCanvas.height = this.video.videoHeight;
-                    console.log('📐 Canvas de análisis configurado:', this.analysisCanvas.width, 'x', this.analysisCanvas.height);
                 }
 
                 // WebRTC se iniciará cuando el servidor envíe 'doctor-ready-for-webrtc'
@@ -538,12 +536,6 @@ class TelemedicinePatient {
         }
         if (this.analysisCanvas && this.analysisCanvas.style.display !== 'block') {
             this.analysisCanvas.style.display = 'block';
-            // Log para iOS debugging
-            console.log('📱 Canvas de análisis mostrado:', {
-                width: this.analysisCanvas.width,
-                height: this.analysisCanvas.height,
-                display: this.analysisCanvas.style.display
-            });
         }
 
         const pointRadius = 4;
@@ -826,7 +818,6 @@ class TelemedicinePatient {
     }
 
     async showLargeCountdown(seconds) {
-        console.log('🎬 showLargeCountdown iniciado con', seconds, 'segundos');
 
         // Crear overlay de countdown grande si no existe
         let countdownBigOverlay = document.getElementById('countdownBigOverlay');
@@ -900,8 +891,6 @@ class TelemedicinePatient {
 
         if (isMobile && !this.audioActivated) {
             // NO mostrar panel aquí - se muestra desde onLoadComplete
-            // Solo registrar que se necesita activación
-            console.log('📱 Audio requiere activación de usuario - esperando carga de MP3s');
             return;
         }
 
@@ -1004,7 +993,6 @@ class TelemedicinePatient {
 
             if (spanishVoice) {
                 testUtterance.voice = spanishVoice;
-                console.log('🎤 Usando voz:', spanishVoice.name, '(' + spanishVoice.lang + ')');
             }
 
             // Reproducir el test utterance
@@ -1013,11 +1001,6 @@ class TelemedicinePatient {
             // NO intentar desbloquear todos los MP3s aquí - causa reproducción simultánea
             // Los MP3s se desbloquearán naturalmente cuando se reproduzca el primero
             // iOS permite audio después de interacción de usuario, simplemente marcar como activado
-            if (this.audioManager && this.audioManager.isReady()) {
-                console.log('✅ AudioManager listo - MP3s se reproducirán en las instrucciones');
-            } else {
-                console.log('⚠️ AudioManager no listo, usando solo speechSynthesis');
-            }
 
             // Marcar como activado
             this.audioActivated = true;
@@ -1035,15 +1018,12 @@ class TelemedicinePatient {
                     this.audioActivationPanel.style.display = 'none';
                 }
             }, 2000);
-
-            console.log('✅ Audio activado exitosamente');
             this.showMessage('🔊 Audio de instrucciones activado');
         };
 
         // Cargar voces si no están listas (iOS Safari)
         const voices = this.speechSynthesis.getVoices();
         if (voices.length === 0) {
-            console.log('⏳ Esperando carga de voces en iOS...');
             this.speechSynthesis.addEventListener('voiceschanged', activateWithVoices, { once: true });
 
             // Forzar carga de voces en iOS (workaround)
@@ -1090,11 +1070,10 @@ class TelemedicinePatient {
 
             // Configurar callbacks de progreso
             this.audioManager.onLoadProgress = (progress, current, total) => {
-                console.log(`📥 Cargando audios: ${current}/${total} (${progress.toFixed(0)}%)`);
+                // Silencioso - no loggear progreso
             };
 
             this.audioManager.onLoadComplete = () => {
-                console.log('✅ Todos los audios pre-cargados y listos');
                 this.showMessage('🔊 Audios cargados correctamente');
 
                 // IMPORTANTE: Mostrar botón de activación solo cuando los MP3s estén listos

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Médico - Examen Osteomuscular Virtual</title>
     <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -532,7 +533,7 @@
         <!-- Panel de Sesión y Control -->
         <div class="doctor-panel session-panel">
             <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 20px;">
-                <img src="logo.png" alt="BSL" style="height: 48px; opacity: 0.9; margin-bottom: 8px;">
+                <img src="public/logo.png" alt="BSL" style="height: 48px; opacity: 0.9; margin-bottom: 8px;">
                 <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #e4e6eb;">Prueba Osteomuscular</h3>
             </div>
 
@@ -727,7 +728,8 @@
 
             <!-- Acciones finales -->
             <div class="doctor-controls">
-                <button id="generateReportBtn" class="btn btn-accent" disabled>Generar Informe</button>
+                <button id="generateReportBtn" class="btn btn-accent" disabled>📄 Informe JSON</button>
+                <button id="generatePDFBtn" class="btn btn-accent" disabled>📋 Informe PDF</button>
                 <button id="endSessionBtn" class="btn btn-secondary" disabled>Finalizar Sesión</button>
             </div>
         </div>
