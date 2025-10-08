@@ -11,6 +11,8 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 **Estado**: ✅ **Completamente funcional en móvil y desktop**
 
 **Últimas mejoras críticas**:
+- 📊 **Monitoreo de recursos**: Endpoint /health para tracking de memoria, sesiones y capacidad
+- 🔗 **Auto-completar paciente**: URL con parámetros pre-llena nombre y código de sesión
 - 📋 **Exportación PDF profesional**: Informes médicos completos con diseño profesional
 - 🎨 **Mobile UX optimizada**: Banner de instrucciones superior, countdown no bloqueante, overlays ocultos
 - 🔊 **Audio iOS funcional**: Pre-carga de 21 MP3s, activación silenciosa, fallback automático
@@ -342,6 +344,88 @@ The application follows a **modern, professional dark theme** inspired by Whereb
 - Microphone access for audio instructions (optional)
 
 ## Recent Improvements (Latest)
+
+### Health Monitoring + URL Parameters (2025-10-08) - DEVOPS & UX
+
+**Server monitoring endpoint and patient auto-fill from URL parameters**.
+
+#### Health Monitoring Endpoint:
+
+**New Feature**: `GET /health` endpoint for real-time server resource monitoring.
+
+**Location**: [server.js:55-122](server.js#L55-L122)
+
+**Provides**:
+- Memory usage (heap, RSS, usage %)
+- Active sessions count and capacity
+- Connected clients (doctors, patients, waiting)
+- Server uptime (formatted)
+- Health status (healthy/warning)
+- System details (Node version, platform, PID)
+
+**Health Criteria**:
+```javascript
+healthy: activeSessionsCount < 60 && heapUsed < 400 MB
+warning: activeSessionsCount >= 60 || heapUsed >= 400 MB
+```
+
+**Use Cases**:
+- Manual monitoring: `curl http://localhost:3000/health`
+- Uptime Robot integration (keyword: `"status":"healthy"`)
+- Capacity planning for scaling decisions
+- Digital Ocean monitoring dashboard
+
+**Capacity Recommendation** (from testing):
+- **$5/mo plan** (512 MB RAM): Good for 5-10 sessions (10-20 users)
+- **$12/mo plan** (1 GB RAM): Recommended for 10-15 sessions (20-30 users)
+- **$24/mo plan** (2 GB RAM): Supports 50-60 sessions (100-120 users) ✅ Documented
+
+#### URL Parameters Auto-fill:
+
+**New Feature**: Patient URL can include parameters to auto-complete login form.
+
+**Location**: [telemedicine-patient.js:92-119](telemedicine-patient.js#L92-L119)
+
+**Supported Formats**:
+```
+# Opción 1: Nombre y apellido separados
+?nombre=Juan&apellido=Pérez&session=ABC123
+
+# Opción 2: Nombre completo
+?fullname=Juan%20Pérez&codigo=ABC123
+
+# Opción 3: Solo nombre
+?nombre=Juan
+```
+
+**Parameters**:
+- `nombre`: First name (combined with apellido if provided)
+- `apellido`: Last name
+- `fullname`: Full name (alternative to nombre+apellido)
+- `session` or `codigo`: Session code (auto-fills and uppercases)
+
+**Benefits**:
+- Easy integration with external systems (CRM, scheduling)
+- Reduced friction for patient connection
+- URL can be sent via SMS/email/WhatsApp
+- Less typing errors
+
+**Age Field Removed**:
+- Simplified patient data model
+- Only name required (privacy-friendly)
+- PDF report handles missing age gracefully
+- Removed from both patient and doctor interfaces
+
+**Files Modified**:
+- `server.js`: New `/health` endpoint
+- `telemedicine-patient.js`: `loadPatientDataFromURL()` function
+- `paciente.html`: Removed age input
+- `medico.html`: Removed age display
+- `telemedicine-doctor.js`: Removed age references
+
+**Commits**: a3ffbb4, 9e6d034, f860fcf (2025-10-08)
+
+---
 
 ### PDF Export System + Console Cleanup (2025-10-08) - UX ENHANCEMENT
 
