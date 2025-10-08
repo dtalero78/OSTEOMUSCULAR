@@ -11,11 +11,13 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 **Estado**: ✅ **Completamente funcional en móvil y desktop**
 
 **Últimas mejoras críticas**:
+- 📋 **Exportación PDF profesional**: Informes médicos completos con diseño profesional
 - 🎨 **Mobile UX optimizada**: Banner de instrucciones superior, countdown no bloqueante, overlays ocultos
 - 🔊 **Audio iOS funcional**: Pre-carga de 21 MP3s, activación silenciosa, fallback automático
 - 📱 **Responsive completo**: Layout adaptado para móviles (≤768px), táctil-friendly
 - 🏥 **Métricas estabilizadas**: Buffer de 30 frames para resultados médicos reproducibles
 - 🔗 **Arquitectura híbrida**: WebRTC P2P (métricas 30 FPS) + Socket.io (landmarks 15 FPS)
+- 🧹 **Consola limpia**: Eliminados logs excesivos, solo errores críticos
 
 **Capacidad actual**: 50-60 sesiones concurrentes en Digital Ocean $24/mes
 
@@ -36,6 +38,7 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 - **Communication**: WebRTC Data Channel (P2P) + Socket.io (fallback) for pose data streaming
 - **Video Streaming**: WebRTC peer-to-peer (no server relay)
 - **MediaPipe Pose Landmarker**: Real-time pose detection (loaded via CDN from jsdelivr.net)
+- **PDF Generation**: jsPDF (loaded via CDN) for professional medical reports
 - **Web APIs**: Camera access via getUserMedia, Canvas for visualization
 - **Design System**: Modern dark UI with Figtree font (Google Fonts), Whereby-inspired interface
 - **Medical Focus**: Specialized for clinical postural and joint analysis with telemedicine capabilities
@@ -85,7 +88,8 @@ npx http-server -p 8000
 - **Patient Skeleton Display**: Patient sees their own pose analysis overlay on video feed
 - **Instant Metrics**: Medical calculations updated continuously during examination
 - **Digital Capture**: Doctor can capture key moments for detailed analysis
-- **Medical Reports**: Automated generation of comprehensive examination reports
+- **Medical Reports**: Dual export system (JSON raw data + PDF professional report)
+- **PDF Export**: Complete medical reports with professional design, clinical indicators, and recommendations
 - **Audio Guidance**: Patients receive spoken instructions during examination
 - **Guided Medical Sequences**: Step-by-step examination protocols for different assessment types
 
@@ -196,7 +200,9 @@ The application uses specific medical thresholds defined in the code:
 - `sendCommand()`: Sends instructions/commands to patient
 - `startGuidedSequence()`: Initiates medical examination sequences (posture, ranges, symmetry, complete)
 - `captureSnapshot()`: Captures moment for detailed analysis
-- `generateReport()`: Creates comprehensive medical report with recommendations
+- `generateReport()`: Creates comprehensive medical report in JSON format with raw data
+- `generatePDFReport()`: Generates professional PDF report with formatted layout and clinical indicators
+- `addMetricRow()`: Helper function to format metric rows in PDF with value, unit, and status
 - `generateRecommendations()`: Advanced medical recommendations based on clinical thresholds
 
 #### TelemedicinePatient Class (`telemedicine-patient.js`)
@@ -296,6 +302,112 @@ The application follows a **modern, professional dark theme** inspired by Whereb
 - Microphone access for audio instructions (optional)
 
 ## Recent Improvements (Latest)
+
+### PDF Export System + Console Cleanup (2025-10-08) - UX ENHANCEMENT
+
+**Professional medical report generation with comprehensive data export and cleaner debugging**.
+
+#### PDF Export Implementation:
+
+**New Feature**: Doctor can now export examination reports in PDF format with professional medical layout.
+
+**Location**: [medico.html:730-732](medico.html#L730-L732), [telemedicine-doctor.js:1073-1309](telemedicine-doctor.js#L1073-L1309)
+
+**Report Structure**:
+```
+📋 INFORME MÉDICO
+├── Encabezado Profesional (fondo azul #5b8def)
+├── Información de Sesión
+│   ├── Código de sesión
+│   ├── Fecha completa (formato español)
+│   ├── Hora de generación
+│   └── Origen de métricas (estabilizadas/instantáneas)
+├── Datos del Paciente (nombre, edad)
+├── Médico Evaluador (nombre del doctor)
+├── Análisis Postural
+│   ├── Alineación Cervical (°) → ✓ Normal / ⚠ Atención / ✗ Alterado
+│   ├── Inclinación Pélvica (°) → ✓ Normal / ⚠ Alterado
+│   └── Desviación Lateral (mm) → ✓ Normal / ⚠ Atención / ✗ Alterado
+├── Ángulos Articulares
+│   ├── Hombros (derecho/izquierdo)
+│   └── Caderas (derecha/izquierda)
+├── Simetría Corporal
+│   ├── Simetría de Hombros (%)
+│   ├── Simetría de Caderas (%)
+│   └── Balance General (%)
+├── Recomendaciones Clínicas (lista numerada)
+├── Capturas Realizadas (timestamp + origen métricas)
+├── Observaciones del Médico (texto libre)
+└── Pie de Página (numeración, firma sistema)
+```
+
+**Technical Details**:
+- **Library**: jsPDF 2.5.1 (loaded via CDN)
+- **Multi-page**: Automatic pagination when content exceeds page height
+- **Color Scheme**: Primary blue (#5b8def), text (#323232), light gray (#b0b3b8)
+- **Fonts**: Helvetica (bold/normal/italic) for professional medical appearance
+- **Layout**: A4 size, margins 15mm, structured sections with proper spacing
+- **Indicators**: Clinical thresholds with visual markers (✓ ⚠ ✗)
+- **File naming**: `Informe_PatientName_timestamp.pdf`
+
+**Clinical Thresholds Implemented**:
+```javascript
+// Postura
+cervicalAlignment: ≤10° Normal, ≤15° Atención, >15° Alterado
+pelvicTilt: ≤5° Normal, >5° Alterado
+lateralDeviation: ≤20mm Normal, ≤30mm Atención, >30mm Alterado
+
+// Simetría
+shoulderSymmetry: ≥90% Normal, ≥85% Atención, <85% Alterado
+hipSymmetry: ≥90% Normal, ≥85% Atención, <85% Alterado
+overallBalance: ≥80% Normal, <80% Alterado
+```
+
+**UI Changes**:
+- Two separate buttons in doctor interface:
+  - 📄 **Informe JSON**: Raw data export (existing)
+  - 📋 **Informe PDF**: Professional report (new)
+- Both buttons enabled when patient is connected
+- PDF generation validated before export (checks for metrics availability)
+
+#### Console Log Cleanup:
+
+**Problem**: Console flooded with thousands of repetitive logs during examination sessions.
+
+**Logs Removed**:
+- ❌ Frame-by-frame transmission logs (every 33ms)
+- ❌ Audio loading progress (21 MP3s × multiple logs each)
+- ❌ WebRTC verbose connection logs
+- ❌ Canvas configuration logs
+- ❌ Metrics received logs (every 30 frames)
+- ❌ Data channel status updates
+- ❌ Video metadata logs
+- ❌ Event listener setup logs
+- ❌ Countdown initialization logs
+- ❌ Buffer stabilization logs
+
+**Logs Kept** (critical only):
+- ✅ Connection/disconnection events
+- ✅ Session creation/destruction
+- ✅ Critical errors (WebRTC failures, metric validation)
+- ✅ Data channel errors
+- ✅ Invalid metric warnings
+- ✅ Fatal initialization errors
+
+**Impact**:
+- Console output reduced by ~95%
+- Easier debugging of real issues
+- Better performance (less console overhead)
+- Cleaner production logs
+
+**Files Modified**:
+- `medico.html`: Added jsPDF CDN, new PDF button
+- `telemedicine-doctor.js`: Added `generatePDFReport()`, `addMetricRow()`, removed 35+ console.log calls
+- `telemedicine-patient.js`: Removed 20+ console.log calls, kept only critical errors
+
+**Commit**: f96f83f (2025-10-08)
+
+---
 
 ### Hybrid Architecture: WebRTC + Socket.io (2025-10-06) - PRODUCTION READY
 
