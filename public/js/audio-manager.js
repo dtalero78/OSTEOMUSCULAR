@@ -12,6 +12,9 @@ class AudioManager {
         this.usePreloaded = true; // true = MP3, false = fallback speechSynthesis
         this.onLoadComplete = null;
         this.onLoadProgress = null;
+
+        // Debug mode (activar con ?debug en URL)
+        this.debugMode = new URLSearchParams(window.location.search).has('debug');
     }
 
     /**
@@ -21,7 +24,7 @@ class AudioManager {
         if (this.isLoaded || this.isLoading) return;
         this.isLoading = true;
 
-        console.log('🔊 AudioManager: Iniciando pre-carga de audios...');
+        if (this.debugMode) console.log('🔊 AudioManager: Iniciando pre-carga de audios...');
 
         try {
             // Cargar mapa de audios
@@ -30,7 +33,7 @@ class AudioManager {
 
             // Extraer todas las URLs
             const audioUrls = this.extractAllUrls(this.audioMap);
-            console.log(`📥 Encontrados ${audioUrls.length} archivos de audio`);
+            if (this.debugMode) console.log(`📥 Encontrados ${audioUrls.length} archivos de audio`);
 
             // Pre-cargar todos
             await this.preloadAll(audioUrls);
@@ -38,7 +41,7 @@ class AudioManager {
             this.isLoaded = true;
             this.isLoading = false;
 
-            console.log('✅ AudioManager: Todos los audios pre-cargados');
+            if (this.debugMode) console.log('✅ AudioManager: Todos los audios pre-cargados');
             if (this.onLoadComplete) this.onLoadComplete();
 
         } catch (error) {
@@ -75,9 +78,9 @@ class AudioManager {
                         this.onLoadProgress(progress, index + 1, urls.length);
                     }
                 })
-                .catch((err) => {
+                .catch(() => {
                     // NO detener carga completa si un audio falla
-                    console.warn(`  ⚠️ Omitido: ${url}`);
+                    if (this.debugMode) console.warn(`  ⚠️ Omitido: ${url}`);
                     const progress = ((index + 1) / urls.length) * 100;
                     if (this.onLoadProgress) {
                         this.onLoadProgress(progress, index + 1, urls.length);
@@ -97,12 +100,12 @@ class AudioManager {
 
             audio.addEventListener('canplaythrough', () => {
                 this.audioCache.set(url, audio);
-                console.log(`  ✓ Cargado: ${url}`);
+                if (this.debugMode) console.log(`  ✓ Cargado: ${url}`);
                 resolve();
             }, { once: true });
 
             audio.addEventListener('error', (e) => {
-                console.warn(`  ✗ Error: ${url}`, e);
+                if (this.debugMode) console.warn(`  ✗ Error: ${url}`, e);
                 reject(e);
             }, { once: true });
 
@@ -118,15 +121,15 @@ class AudioManager {
      */
     unlockAll() {
         if (!this.isLoaded) {
-            console.log('⏳ AudioManager: Esperando pre-carga para desbloquear');
+            if (this.debugMode) console.log('⏳ AudioManager: Esperando pre-carga para desbloquear');
             return Promise.resolve(false);
         }
 
-        console.log('🔓 Desbloqueando todos los audios para iOS...');
+        if (this.debugMode) console.log('🔓 Desbloqueando todos los audios para iOS...');
         let unlockedCount = 0;
 
         // Iterar y pausar INMEDIATAMENTE después de play()
-        for (const [url, audio] of this.audioCache.entries()) {
+        for (const [, audio] of this.audioCache.entries()) {
             try {
                 audio.volume = 0; // Silenciar por si acaso
                 audio.currentTime = 0;
@@ -143,7 +146,7 @@ class AudioManager {
             }
         }
 
-        console.log(`✅ ${unlockedCount}/${this.audioCache.size} audios desbloqueados (silenciosamente)`);
+        if (this.debugMode) console.log(`✅ ${unlockedCount}/${this.audioCache.size} audios desbloqueados (silenciosamente)`);
         return Promise.resolve(unlockedCount > 0);
     }
 
@@ -154,19 +157,19 @@ class AudioManager {
      */
     async play(category, key) {
         if (!this.usePreloaded || !this.isLoaded) {
-            console.log(`🔊 AudioManager: Pre-carga no lista, usando fallback`);
+            if (this.debugMode) console.log(`🔊 AudioManager: Pre-carga no lista, usando fallback`);
             return false;
         }
 
         const url = this.audioMap?.[category]?.[key];
         if (!url) {
-            console.warn(`⚠️ AudioManager: No encontrado ${category}.${key}`);
+            if (this.debugMode) console.warn(`⚠️ AudioManager: No encontrado ${category}.${key}`);
             return false;
         }
 
         const audio = this.audioCache.get(url);
         if (!audio) {
-            console.warn(`⚠️ AudioManager: Audio no en cache ${url}`);
+            if (this.debugMode) console.warn(`⚠️ AudioManager: Audio no en cache ${url}`);
             return false;
         }
 
@@ -176,11 +179,11 @@ class AudioManager {
 
         try {
             await audio.play();
-            console.log(`✅ MP3 reproducido: ${category}.${key}`);
+            if (this.debugMode) console.log(`✅ MP3 reproducido: ${category}.${key}`);
             return true; // Éxito
         } catch (err) {
             // iOS Safari bloquea autoplay - retornar false para fallback
-            console.warn(`⚠️ MP3 bloqueado (${err.name}), usando fallback`);
+            if (this.debugMode) console.warn(`⚠️ MP3 bloqueado (${err.name}), usando fallback`);
             return false;
         }
     }
@@ -195,7 +198,7 @@ class AudioManager {
 
         const audio = this.audioCache.get(url);
         if (!audio) {
-            console.warn(`⚠️ AudioManager: Audio no en cache ${url}`);
+            if (this.debugMode) console.warn(`⚠️ AudioManager: Audio no en cache ${url}`);
             return null;
         }
 

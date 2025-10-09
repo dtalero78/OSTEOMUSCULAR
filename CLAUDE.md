@@ -103,6 +103,38 @@ npm run dev
 - `warning`: ≥ 60 sessions OR ≥ 400 MB heap usage
 
 **Metrics** (`GET /metrics`): WebRTC vs Socket.io statistics and active sessions list
+
+### Debug Mode
+
+**Enable verbose logging** by adding `?debug` to any URL:
+```
+http://localhost:3000/paciente?debug
+http://localhost:3000/medico?debug
+```
+
+**What gets logged in debug mode**:
+- ✅ Audio pre-loading progress (21 MP3 files)
+- ✅ AudioManager initialization steps
+- ✅ MP3 playback success/failure
+- ✅ Fallback to speechSynthesis
+- ✅ Audio activation flow
+- ✅ Patient interface initialization
+
+**Production mode** (without `?debug`):
+- ❌ No audio loading logs
+- ❌ No MP3 playback logs
+- ❌ No initialization messages
+- ✅ Only critical errors displayed
+
+**Implementation**:
+- [audio-manager.js](public/js/audio-manager.js): Check `this.debugMode` before `console.log()`
+- [telemedicine-patient.js](telemedicine-patient.js): Check `this.debugMode` before audio logs
+
+**Use cases**:
+- **Production**: Clean console for end users
+- **Development**: Full verbosity for debugging
+- **User support**: Ask users to add `?debug` to URL and share console output
+
 ```
 
 ### Original Static Application (Legacy)
@@ -344,6 +376,75 @@ The application follows a **modern, professional dark theme** inspired by Whereb
 - Microphone access for audio instructions (optional)
 
 ## Recent Improvements (Latest)
+
+### Debug Mode System (2025-10-09) - CONSOLE CLEANUP
+
+**Problem**: Mobile console flooded with audio loading logs, making debugging difficult for end users.
+
+**Solution**: Implemented URL-based debug mode system (`?debug`) to control console verbosity.
+
+#### Changes Implemented:
+
+**1. Debug Mode Detection**:
+- Both `audio-manager.js` and `telemedicine-patient.js` detect `?debug` in URL
+- `this.debugMode = new URLSearchParams(window.location.search).has('debug')`
+
+**2. Conditional Logging**:
+```javascript
+// Before (always logs)
+console.log('✅ AudioManager: Todos los audios pre-cargados');
+
+// After (only in debug mode)
+if (this.debugMode) console.log('✅ AudioManager: Todos los audios pre-cargados');
+```
+
+**3. Logs Wrapped** (audio-manager.js):
+- ❌ Audio initialization (`🔊 AudioManager: Iniciando pre-carga...`)
+- ❌ Files found (`📥 Encontrados 21 archivos de audio`)
+- ❌ Individual file loading (`✓ Cargado: /audio/guided_posicion_inicial.mp3`)
+- ❌ Completion message (`✅ AudioManager: Todos los audios pre-cargados`)
+- ❌ Unlock status (`🔓 Desbloqueando todos los audios...`)
+- ❌ MP3 playback success/failure
+- ✅ **Kept**: Critical errors (file load failures with console.error)
+
+**4. Logs Wrapped** (telemedicine-patient.js):
+- ❌ Audio activation (`🔊 Activando audio por interacción...`)
+- ❌ MP3 blocked fallback (`🔊 MP3 bloqueado, usando fallback`)
+- ❌ Audio toggle (`🔊 Audio de instrucciones habilitado/deshabilitado`)
+- ❌ Patient initialization (`👤 Iniciando interfaz del paciente...`)
+- ✅ **Kept**: Critical errors (audioManager initialization failures)
+
+#### Usage:
+
+**Production** (clean console):
+```
+http://localhost:3000/paciente
+http://localhost:3000/medico
+```
+Console: **Silent** (only critical errors)
+
+**Debug Mode** (verbose):
+```
+http://localhost:3000/paciente?debug
+http://localhost:3000/medico?debug
+```
+Console: **Full audio flow** + all debug messages
+
+#### Benefits:
+- ✅ Professional UX for end users (clean console)
+- ✅ Full debugging capability when needed
+- ✅ Easy user support (ask to add `?debug` to URL)
+- ✅ No code duplication (single flag controls all logs)
+- ✅ iOS testing simplified (no noise in Safari console)
+
+**Files Modified**:
+- `public/js/audio-manager.js`: Added `debugMode` property, wrapped 10+ console.log calls
+- `telemedicine-patient.js`: Added `debugMode` property, wrapped 5+ audio logs
+- `CLAUDE.md`: New Debug Mode section + this documentation
+
+**Commits**: (2025-10-09)
+
+---
 
 ### Health Monitoring + URL Parameters (2025-10-08) - DEVOPS & UX
 

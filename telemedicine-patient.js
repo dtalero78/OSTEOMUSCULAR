@@ -49,6 +49,9 @@ class TelemedicinePatient {
         this.speechSynthesis = window.speechSynthesis;
         this.audioManager = null; // Se inicializa en showExamScreen()
 
+        // Debug mode (activar con ?debug en URL)
+        this.debugMode = new URLSearchParams(window.location.search).has('debug');
+
         // WebRTC configuration
         this.peerConnection = null;
         this.localStream = null; // Guardar el stream local para WebRTC
@@ -931,8 +934,7 @@ class TelemedicinePatient {
                 this.audioManager.play(audioData.category, audioData.key).then(success => {
                     if (!success) {
                         // MP3 falló (bloqueado por navegador), usar fallback
-                        // Solo log si hay ?debug en URL
-                        if (window.location.search.includes('debug')) {
+                        if (this.debugMode) {
                             console.log(`🔊 MP3 bloqueado, usando fallback speechSynthesis`);
                         }
                         this.useSpeechSynthesis(text);
@@ -994,7 +996,7 @@ class TelemedicinePatient {
     }
 
     activateAudio() {
-        console.log('🔊 Activando audio por interacción del usuario (iOS compatible)...');
+        if (this.debugMode) console.log('🔊 Activando audio por interacción del usuario (iOS compatible)...');
 
         // Función para reproducir con voces cargadas (iOS requiere esto)
         const activateWithVoices = () => {
@@ -1117,7 +1119,7 @@ class TelemedicinePatient {
 
             // Iniciar pre-carga
             this.audioManager.initialize().catch(err => {
-                console.warn('⚠️ Error pre-cargando audios, usando fallback:', err);
+                if (this.debugMode) console.warn('⚠️ Error pre-cargando audios, usando fallback:', err);
 
                 // Si falla la carga, mostrar panel igualmente (usará fallback)
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1333,12 +1335,13 @@ class TelemedicinePatient {
         this.guidedAudioToggle.textContent = this.audioEnabled ? '🔊 Audio' : '🔇 Audio';
         this.guidedAudioToggle.classList.toggle('active', this.audioEnabled);
 
-        console.log(`🔊 Audio de instrucciones ${this.audioEnabled ? 'habilitado' : 'deshabilitado'}`);
+        if (this.debugMode) console.log(`🔊 Audio de instrucciones ${this.audioEnabled ? 'habilitado' : 'deshabilitado'}`);
     }
 }
 
 // Inicializar cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('👤 Iniciando interfaz del paciente...');
+    const debugMode = new URLSearchParams(window.location.search).has('debug');
+    if (debugMode) console.log('👤 Iniciando interfaz del paciente...');
     window.telemedicinePatient = new TelemedicinePatient();
 });
