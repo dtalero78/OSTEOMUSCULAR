@@ -67,6 +67,21 @@ app.post('/twilio-token', (req, res) => {
         const apiKeySid = process.env.TWILIO_API_KEY_SID;
         const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
 
+        // Validar credenciales
+        if (!accountSid || !apiKeySid || !apiKeySecret) {
+            console.error('❌ Faltan credenciales de Twilio en .env');
+            return res.status(500).json({
+                error: 'Configuración de Twilio incompleta',
+                missing: {
+                    accountSid: !accountSid,
+                    apiKeySid: !apiKeySid,
+                    apiKeySecret: !apiKeySecret
+                }
+            });
+        }
+
+        console.log(`🔑 Generando token con API Key: ${apiKeySid.substring(0, 10)}...`);
+
         // Crear Access Token
         const AccessToken = twilio.jwt.AccessToken;
         const VideoGrant = AccessToken.VideoGrant;
