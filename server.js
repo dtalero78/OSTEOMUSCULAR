@@ -66,27 +66,27 @@ app.post('/twilio-token', (req, res) => {
         const accountSid = process.env.TWILIO_ACCOUNT_SID;
         const apiKeySid = process.env.TWILIO_API_KEY_SID;
         const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+        const authToken = process.env.TWILIO_AUTH_TOKEN;
 
-        // Validar credenciales
-        if (!accountSid || !apiKeySid || !apiKeySecret) {
-            console.error('❌ Faltan credenciales de Twilio en .env');
+        // Decidir qué credenciales usar (API Key preferido, Auth Token fallback)
+        const useApiKey = apiKeySid && apiKeySecret;
+        const signingKeySid = useApiKey ? apiKeySid : accountSid;
+        const signingKeySecret = useApiKey ? apiKeySecret : authToken;
+
+        if (!accountSid || !signingKeySecret) {
+            console.error('❌ Faltan credenciales de Twilio');
             return res.status(500).json({
-                error: 'Configuración de Twilio incompleta',
-                missing: {
-                    accountSid: !accountSid,
-                    apiKeySid: !apiKeySid,
-                    apiKeySecret: !apiKeySecret
-                }
+                error: 'Configuración de Twilio incompleta'
             });
         }
 
-        console.log(`🔑 Generando token con API Key: ${apiKeySid.substring(0, 10)}...`);
+        console.log(`🔑 Generando token con: ${useApiKey ? 'API Key (' + apiKeySid.substring(0, 10) + '...)' : 'Auth Token'}`);
 
         // Crear Access Token
         const AccessToken = twilio.jwt.AccessToken;
         const VideoGrant = AccessToken.VideoGrant;
 
-        const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
+        const token = new AccessToken(accountSid, signingKeySid, signingKeySecret, {
             identity: identity,
             ttl: 14400 // 4 horas
         });
