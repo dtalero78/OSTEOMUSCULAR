@@ -3,11 +3,13 @@
  * Gestiona conexiones WebSocket entre pacientes y médicos
  */
 
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const twilio = require('twilio');
 
 const app = express();
 const server = http.createServer(app);
@@ -50,6 +52,48 @@ app.get('/paciente', (req, res) => {
 
 app.get('/medico', (req, res) => {
     res.sendFile(path.join(__dirname, 'medico.html'));
+});
+
+// ✅ Endpoint /twilio-token - Generar Access Token para Twilio Video
+app.post('/twilio-token', (req, res) => {
+    const { identity, room } = req.body;
+
+    if (!identity || !room) {
+        return res.status(400).json({ error: 'Se requiere identity y room' });
+    }
+
+    try {
+        const accountSid = process.env.TWILIO_ACCOUNT_SID;
+        const apiKeySid = process.env.TWILIO_API_KEY_SID;
+        const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+
+        // Crear Access Token
+        const AccessToken = twilio.jwt.AccessToken;
+        const VideoGrant = AccessToken.VideoGrant;
+
+        const token = new AccessToken(accountSid, apiKeySid, apiKeySecret, {
+            identity: identity,
+            ttl: 14400 // 4 horas
+        });
+
+        // Crear Video Grant para la sala específica
+        const videoGrant = new VideoGrant({
+            room: room
+        });
+
+        token.addGrant(videoGrant);
+
+        res.json({
+            token: token.toJwt(),
+            identity: identity,
+            room: room
+        });
+
+        console.log(`🎫 Token generado para ${identity} en sala ${room}`);
+    } catch (error) {
+        console.error('❌ Error generando token:', error);
+        res.status(500).json({ error: 'Error generando token de Twilio' });
+    }
 });
 
 // ✅ Endpoint /health - Monitoreo de recursos del servidor
