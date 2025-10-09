@@ -49,15 +49,10 @@ class TelemedicinePatient {
         this.speechSynthesis = window.speechSynthesis;
         this.audioManager = null; // Se inicializa en showExamScreen()
 
-        // WebRTC configuration
-        this.peerConnection = null;
-        this.localStream = null; // Guardar el stream local para WebRTC
-        this.iceServers = {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' }
-            ]
-        };
+        // Twilio Video configuration
+        this.twilioRoom = null;
+        this.twilioToken = null;
+        this.localStream = null;
 
         this.initializeInterface();
     }
@@ -255,12 +250,12 @@ class TelemedicinePatient {
         this.socket.on('doctor-ready-for-webrtc', ({ sessionCode, message }) => {
             // Iniciar WebRTC ahora que el médico está listo
             if (this.localStream) {
-                this.setupWebRTC(this.localStream);
+                this.joinTwilioRoom();
             } else {
                 // Reintentar después de 1 segundo si el stream no está listo
                 setTimeout(() => {
                     if (this.localStream) {
-                        this.setupWebRTC(this.localStream);
+                        this.joinTwilioRoom();
                     } else {
                         console.error('❌ Stream local no disponible después de espera');
                     }
@@ -394,12 +389,109 @@ class TelemedicinePatient {
         }
     }
 
-    async setupWebRTC(stream) {
+    async joinTwilioRoom() {
         try {
             if (!this.sessionCode) {
-                console.error('❌ No hay sessionCode disponible para WebRTC');
+                console.error('❌ No hay sessionCode disponible para Twilio');
                 return;
             }
+
+            console.log('📺 Conectando a Twilio Video...');
+
+            // Obtener token de Twilio
+            const response = await fetch('/twilio-token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    identity: `patient-${this.patientData.name}`,
+                    room: this.sessionCode
+                })
+            });
+
+            const data = await response.json();
+            this.twilioToken = data.token;
+
+            // Conectar a sala de Twilio con video/audio local
+            this.twilioRoom = await Twilio.Video.connect(this.twilioToken, {
+                name: this.sessionCode,
+                audio: true,
+                video: { width: 640, height: 480 },
+                networkQuality: { local: 1, remote: 1 }
+            });
+
+            console.log('✅ Conectado a sala Twilio:', this.twilioRoom.name);
+
+            // Manejar participantes remotos (médico)
+            this.twilioRoom.on('participantConnected', participant => {
+                console.log('👨‍⚕️ Médico conectado:', participant.identity);
+                this.handleRemoteParticipant(participant);
+            });
+
+            this.twilioRoom.on('participantDisconnected', participant => {
+                console.log('👨‍⚕️ Médico desconectado:', participant.identity);
+                if (this.doctorVideo) {
+                    this.doctorVideo.srcObject = null;
+                }
+                if (this.doctorVideoPlaceholder) {
+                    this.doctorVideoPlaceholder.style.display = 'flex';
+                }
+            });
+
+            // Si ya hay participantes
+            this.twilioRoom.participants.forEach(participant => {
+                this.handleRemoteParticipant(participant);
+            });
+
+        } catch (error) {
+            console.error('❌ Error conectando a Twilio:', error);
+        }
+    }
+
+    handleRemoteParticipant(participant) {
+        // Manejar tracks existentes
+        participant.tracks.forEach(publication => {
+            if (publication.track) {
+                this.attachTrack(publication.track);
+            }
+        });
+
+        // Manejar nuevos tracks
+        participant.on('trackSubscribed', track => {
+            this.attachTrack(track);
+        });
+
+        participant.on('trackUnsubscribed', track => {
+            track.detach().forEach(element => element.remove());
+        });
+    }
+
+    attachTrack(track) {
+        if (track.kind === 'video' && this.doctorVideo) {
+            track.attach(this.doctorVideo);
+
+            // Ocultar placeholder
+            if (this.doctorVideoPlaceholder) {
+                this.doctorVideoPlaceholder.style.display = 'none';
+            }
+
+            // Mostrar video
+            this.doctorVideo.style.display = 'block';
+
+            console.log('✅ Video del médico conectado (Twilio)');
+        }
+
+        if (track.kind === 'audio') {
+            const audioElement = track.attach();
+            audioElement.style.display = 'none';
+            document.body.appendChild(audioElement);
+            console.log('✅ Audio del médico conectado (Twilio)');
+        }
+    }
+
+    // DEPRECATED: Ya no se usa WebRTC manual
+    async setupWebRTC(stream) {
+        console.warn('⚠️ setupWebRTC deprecated - usando Twilio');
+        return;
 
             // Crear peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
