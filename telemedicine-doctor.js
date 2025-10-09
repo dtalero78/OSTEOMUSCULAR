@@ -546,6 +546,10 @@ class TelemedicineDoctor {
             const answer = await this.peerConnection.createAnswer();
             await this.peerConnection.setLocalDescription(answer);
 
+            // 🐛 DEBUG: Verificar que el answer incluye audio
+            console.log('📋 Answer SDP contiene audio:', answer.sdp.includes('m=audio'));
+            console.log('📋 Answer SDP contiene video:', answer.sdp.includes('m=video'));
+
             // Enviar answer al paciente
             this.socket.emit('webrtc-answer', {
                 sessionCode: this.sessionCode,

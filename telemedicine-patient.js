@@ -493,9 +493,16 @@ class TelemedicinePatient {
                 }
             };
 
-            // Crear offer
-            const offer = await this.peerConnection.createOffer();
+            // Crear offer con configuración para recibir audio del médico
+            const offer = await this.peerConnection.createOffer({
+                offerToReceiveAudio: true,  // ✅ Indica que queremos recibir audio
+                offerToReceiveVideo: true   // ✅ Indica que queremos recibir video
+            });
             await this.peerConnection.setLocalDescription(offer);
+
+            // 🐛 DEBUG: Verificar que el offer incluye recepción de audio
+            console.log('📋 Offer SDP contiene audio:', offer.sdp.includes('m=audio'));
+            console.log('📋 Offer SDP contiene video:', offer.sdp.includes('m=video'));
 
             // Enviar offer al médico
             this.socket.emit('webrtc-offer', {
