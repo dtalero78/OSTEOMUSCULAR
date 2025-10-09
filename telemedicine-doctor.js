@@ -378,6 +378,7 @@ class TelemedicineDoctor {
             // ✅ NUEVO: Capturar cámara y audio del médico
             if (!this.localStream) {
                 try {
+                    console.log('🎤 Solicitando acceso a cámara y micrófono del médico...');
                     this.localStream = await navigator.mediaDevices.getUserMedia({
                         video: true,
                         audio: {
@@ -386,9 +387,21 @@ class TelemedicineDoctor {
                             autoGainControl: true
                         }
                     });
-                    console.log('✅ Cámara y audio del médico capturados');
+
+                    // Verificar tracks capturados
+                    const videoTracks = this.localStream.getVideoTracks();
+                    const audioTracks = this.localStream.getAudioTracks();
+                    console.log('✅ Cámara y audio del médico capturados:');
+                    console.log(`  📹 Video tracks: ${videoTracks.length}`, videoTracks.map(t => t.label));
+                    console.log(`  🎤 Audio tracks: ${audioTracks.length}`, audioTracks.map(t => t.label));
+
+                    if (audioTracks.length === 0) {
+                        console.warn('⚠️ No se capturó ningún track de audio. Verifica permisos del navegador.');
+                    }
                 } catch (error) {
                     console.error('❌ Error capturando cámara/audio del médico:', error);
+                    console.error('   Tipo de error:', error.name);
+                    console.error('   Mensaje:', error.message);
                     // Continuar sin stream local (solo recibir del paciente)
                 }
             }
@@ -398,10 +411,14 @@ class TelemedicineDoctor {
 
             // ✅ NUEVO: Agregar tracks del médico a la conexión
             if (this.localStream) {
-                this.localStream.getTracks().forEach(track => {
+                const tracks = this.localStream.getTracks();
+                console.log(`📤 Agregando ${tracks.length} tracks del médico a WebRTC:`);
+                tracks.forEach(track => {
                     this.peerConnection.addTrack(track, this.localStream);
-                    console.log('📤 Agregando track del médico:', track.kind);
+                    console.log(`   ${track.kind}: ${track.label} (enabled: ${track.enabled})`);
                 });
+            } else {
+                console.warn('⚠️ No hay localStream del médico para agregar tracks');
             }
 
             // ✅ NUEVO: Escuchar data channel del paciente
