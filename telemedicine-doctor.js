@@ -134,6 +134,7 @@ class TelemedicineDoctor {
         // WebRTC configuration
         this.peerConnection = null;
         this.remoteVideo = null;
+        this.localStream = null; // Stream del médico (cámara + audio)
         this.iceServers = {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -374,8 +375,34 @@ class TelemedicineDoctor {
                 return;
             }
 
+            // ✅ NUEVO: Capturar cámara y audio del médico
+            if (!this.localStream) {
+                try {
+                    this.localStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        }
+                    });
+                    console.log('✅ Cámara y audio del médico capturados');
+                } catch (error) {
+                    console.error('❌ Error capturando cámara/audio del médico:', error);
+                    // Continuar sin stream local (solo recibir del paciente)
+                }
+            }
+
             // Crear peer connection
             this.peerConnection = new RTCPeerConnection(this.iceServers);
+
+            // ✅ NUEVO: Agregar tracks del médico a la conexión
+            if (this.localStream) {
+                this.localStream.getTracks().forEach(track => {
+                    this.peerConnection.addTrack(track, this.localStream);
+                    console.log('📤 Agregando track del médico:', track.kind);
+                });
+            }
 
             // ✅ NUEVO: Escuchar data channel del paciente
             this.peerConnection.ondatachannel = (event) => {

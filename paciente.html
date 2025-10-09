@@ -315,6 +315,19 @@
             object-fit: contain;
         }
 
+        #doctorVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none; /* Oculto hasta que llegue el stream */
+        }
+
+        #doctorVideoPlaceholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .video-placeholder {
             color: #6a6b6c;
             text-align: center;
@@ -630,6 +643,15 @@
                 display: none;
             }
 
+            /* Video del médico visible en móvil */
+            #doctorVideoCard {
+                display: block;
+            }
+
+            #doctorVideoCard .video-card-body {
+                min-height: 240px; /* Más compacto en móvil */
+            }
+
             /* Instrucciones Card Mobile - Ocultada, usamos banner */
             .instructions-card {
                 display: none;
@@ -894,6 +916,19 @@
                     <canvas id="analysisCanvas"></canvas>
                     <div id="analysisPlaceholder" class="video-placeholder">
                         Esperando análisis...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Video del Médico -->
+            <div class="video-card" id="doctorVideoCard">
+                <div class="video-card-header">
+                    <h3><span class="header-badge">👨‍⚕️</span> Su Médico</h3>
+                </div>
+                <div class="video-card-body">
+                    <video id="doctorVideo" autoplay playsinline></video>
+                    <div id="doctorVideoPlaceholder" class="video-placeholder">
+                        Esperando video del médico...
                     </div>
                 </div>
             </div>

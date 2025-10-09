@@ -147,6 +147,10 @@ class TelemedicinePatient {
         this.analysisCtx = this.analysisCanvas ? this.analysisCanvas.getContext('2d') : null;
         this.analysisPlaceholder = document.getElementById('analysisPlaceholder');
 
+        // Video del médico
+        this.doctorVideo = document.getElementById('doctorVideo');
+        this.doctorVideoPlaceholder = document.getElementById('doctorVideoPlaceholder');
+
         // Elementos de interfaz
         this.doctorInstructions = document.getElementById('doctorInstructions');
         this.currentInstructionBanner = document.getElementById('currentInstructionBanner');
@@ -437,10 +441,37 @@ class TelemedicinePatient {
                 }
             };
 
+            // ✅ NUEVO: Recibir tracks del médico (video + audio)
+            this.peerConnection.ontrack = (event) => {
+                console.log('📥 Recibiendo track del médico:', event.track.kind);
+
+                // Asignar el stream al video del médico
+                if (this.doctorVideo) {
+                    this.doctorVideo.srcObject = event.streams[0];
+
+                    // Mostrar video y ocultar placeholder
+                    this.doctorVideo.style.display = 'block';
+                    if (this.doctorVideoPlaceholder) {
+                        this.doctorVideoPlaceholder.style.display = 'none';
+                    }
+
+                    // Configurar atributos para móvil
+                    this.doctorVideo.setAttribute('playsinline', '');
+                    this.doctorVideo.setAttribute('webkit-playsinline', '');
+
+                    // Reproducir el video
+                    this.doctorVideo.play().catch(err => {
+                        console.error('❌ Error reproduciendo video del médico:', err);
+                    });
+
+                    console.log('✅ Stream del médico recibido y reproduciéndose');
+                }
+            };
+
             // Manejar estado de conexión
             this.peerConnection.onconnectionstatechange = () => {
                 if (this.peerConnection.connectionState === 'connected') {
-                    console.log('✅ WebRTC conectado (video + data channel)');
+                    console.log('✅ WebRTC conectado (video bidireccional + data channel)');
                 }
             };
 
