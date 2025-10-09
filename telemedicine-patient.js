@@ -455,16 +455,34 @@ class TelemedicinePatient {
                         this.doctorVideoPlaceholder.style.display = 'none';
                     }
 
+                    // ✅ AUDIO: Configurar para que se escuche
+                    this.doctorVideo.muted = false;
+                    this.doctorVideo.volume = 1.0;
+
                     // Configurar atributos para móvil
                     this.doctorVideo.setAttribute('playsinline', '');
                     this.doctorVideo.setAttribute('webkit-playsinline', '');
 
-                    // Reproducir el video
-                    this.doctorVideo.play().catch(err => {
-                        console.error('❌ Error reproduciendo video del médico:', err);
-                    });
+                    // Reproducir el video con audio
+                    this.doctorVideo.play()
+                        .then(() => {
+                            console.log('✅ Stream del médico reproduciéndose con audio');
 
-                    console.log('✅ Stream del médico recibido y reproduciéndose');
+                            // Verificar tracks de audio
+                            const audioTracks = event.streams[0].getAudioTracks();
+                            console.log(`🔊 Tracks de audio recibidos: ${audioTracks.length}`);
+                            audioTracks.forEach(track => {
+                                console.log(`  - ${track.label}: ${track.enabled ? 'habilitado' : 'deshabilitado'}`);
+                            });
+                        })
+                        .catch(err => {
+                            console.error('❌ Error reproduciendo video del médico:', err);
+
+                            // Si falla por autoplay, mostrar advertencia
+                            if (err.name === 'NotAllowedError') {
+                                console.warn('⚠️ Autoplay bloqueado. Usuario debe interactuar.');
+                            }
+                        });
                 }
             };
 
