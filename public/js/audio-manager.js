@@ -12,9 +12,7 @@ class AudioManager {
         this.usePreloaded = true; // true = MP3, false = fallback speechSynthesis
         this.onLoadComplete = null;
         this.onLoadProgress = null;
-
-        // Debug mode (activar con ?debug en URL)
-        this.debugMode = new URLSearchParams(window.location.search).has('debug');
+        this.debugMode = false; // Se inicializa en initialize()
     }
 
     /**
@@ -23,6 +21,9 @@ class AudioManager {
     async initialize() {
         if (this.isLoaded || this.isLoading) return;
         this.isLoading = true;
+
+        // Detectar debug mode AHORA (cuando initialize() se llama, no en constructor)
+        this.debugMode = new URLSearchParams(window.location.search).has('debug');
 
         if (this.debugMode) console.log('🔊 AudioManager: Iniciando pre-carga de audios...');
 

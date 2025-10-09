@@ -386,8 +386,9 @@ The application follows a **modern, professional dark theme** inspired by Whereb
 #### Changes Implemented:
 
 **1. Debug Mode Detection**:
-- Both `audio-manager.js` and `telemedicine-patient.js` detect `?debug` in URL
-- `this.debugMode = new URLSearchParams(window.location.search).has('debug')`
+- `audio-manager.js`: Detects debug mode in `initialize()` method (not constructor)
+- `telemedicine-patient.js`: Uses `isDebugMode()` helper method for real-time detection
+- Detection happens **after** DOM is ready to ensure `window.location.search` is available
 
 **2. Conditional Logging**:
 ```javascript
@@ -438,11 +439,16 @@ Console: **Full audio flow** + all debug messages
 - ✅ iOS testing simplified (no noise in Safari console)
 
 **Files Modified**:
-- `public/js/audio-manager.js`: Added `debugMode` property, wrapped 10+ console.log calls
-- `telemedicine-patient.js`: Added `debugMode` property, wrapped 5+ audio logs
+- `public/js/audio-manager.js`: Debug detection in `initialize()`, wrapped 10+ console.log calls
+- `telemedicine-patient.js`: `isDebugMode()` helper method, wrapped 5+ audio logs
 - `CLAUDE.md`: New Debug Mode section + this documentation
 
-**Commits**: (2025-10-09)
+**Critical Fix** (commit 2):
+- Moved debug detection from constructor to `initialize()` to fix timing issue
+- AudioManager singleton was created before DOM ready, `window.location.search` was unavailable
+- Now detection happens when `initialize()` is called (after DOM ready)
+
+**Commits**: 6da42bb, [commit-2] (2025-10-09)
 
 ---
 

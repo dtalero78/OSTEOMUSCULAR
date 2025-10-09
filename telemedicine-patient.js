@@ -49,9 +49,6 @@ class TelemedicinePatient {
         this.speechSynthesis = window.speechSynthesis;
         this.audioManager = null; // Se inicializa en showExamScreen()
 
-        // Debug mode (activar con ?debug en URL)
-        this.debugMode = new URLSearchParams(window.location.search).has('debug');
-
         // WebRTC configuration
         this.peerConnection = null;
         this.localStream = null; // Guardar el stream local para WebRTC
@@ -915,6 +912,10 @@ class TelemedicinePatient {
     }
 
 
+    isDebugMode() {
+        return new URLSearchParams(window.location.search).has('debug');
+    }
+
     speak(text) {
         if (!this.audioEnabled) return;
 
@@ -934,7 +935,7 @@ class TelemedicinePatient {
                 this.audioManager.play(audioData.category, audioData.key).then(success => {
                     if (!success) {
                         // MP3 falló (bloqueado por navegador), usar fallback
-                        if (this.debugMode) {
+                        if (this.isDebugMode()) {
                             console.log(`🔊 MP3 bloqueado, usando fallback speechSynthesis`);
                         }
                         this.useSpeechSynthesis(text);
@@ -996,7 +997,7 @@ class TelemedicinePatient {
     }
 
     activateAudio() {
-        if (this.debugMode) console.log('🔊 Activando audio por interacción del usuario (iOS compatible)...');
+        if (this.isDebugMode()) console.log('🔊 Activando audio por interacción del usuario (iOS compatible)...');
 
         // Función para reproducir con voces cargadas (iOS requiere esto)
         const activateWithVoices = () => {
@@ -1119,7 +1120,7 @@ class TelemedicinePatient {
 
             // Iniciar pre-carga
             this.audioManager.initialize().catch(err => {
-                if (this.debugMode) console.warn('⚠️ Error pre-cargando audios, usando fallback:', err);
+                if (this.isDebugMode()) console.warn('⚠️ Error pre-cargando audios, usando fallback:', err);
 
                 // Si falla la carga, mostrar panel igualmente (usará fallback)
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1335,13 +1336,14 @@ class TelemedicinePatient {
         this.guidedAudioToggle.textContent = this.audioEnabled ? '🔊 Audio' : '🔇 Audio';
         this.guidedAudioToggle.classList.toggle('active', this.audioEnabled);
 
-        if (this.debugMode) console.log(`🔊 Audio de instrucciones ${this.audioEnabled ? 'habilitado' : 'deshabilitado'}`);
+        if (this.isDebugMode()) console.log(`🔊 Audio de instrucciones ${this.audioEnabled ? 'habilitado' : 'deshabilitado'}`);
     }
 }
 
 // Inicializar cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
-    const debugMode = new URLSearchParams(window.location.search).has('debug');
-    if (debugMode) console.log('👤 Iniciando interfaz del paciente...');
+    if (new URLSearchParams(window.location.search).has('debug')) {
+        console.log('👤 Iniciando interfaz del paciente...');
+    }
     window.telemedicinePatient = new TelemedicinePatient();
 });
