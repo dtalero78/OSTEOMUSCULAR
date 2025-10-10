@@ -403,8 +403,44 @@ class TelemedicinePatient {
             console.log('✅ Cámara y canvas iniciados correctamente');
 
         } catch (error) {
+            const errorMessage = error.message || String(error);
+            const errorName = error.name || 'UnknownError';
+
+            this.logger.error('❌ Error accediendo a la cámara (getUserMedia)', {
+                error: errorMessage,
+                errorName: errorName,
+                errorCode: error.code,
+                constraint: error.constraint,
+                sessionCode: this.sessionCode
+            }, 'camera');
             console.error('❌ Error accediendo a la cámara:', error);
-            this.updateConnectionStatus('❌ Error: No se puede acceder a la cámara', 'error');
+
+            // Mensajes específicos
+            if (errorName === 'NotAllowedError') {
+                this.updateConnectionStatus('❌ Permisos de cámara denegados', 'error');
+                alert('⚠️ ACCESO DENEGADO\n\nDebe permitir acceso a la cámara para continuar.\n\n' +
+                      'En su navegador:\n' +
+                      '1. Busque el ícono 🔒 o ⓘ en la barra de direcciones\n' +
+                      '2. Permita acceso a cámara y micrófono\n' +
+                      '3. Recargue esta página');
+            } else if (errorName === 'NotFoundError') {
+                this.updateConnectionStatus('❌ Cámara no encontrada', 'error');
+                alert('⚠️ CÁMARA NO ENCONTRADA\n\nNo se detectó ninguna cámara.\n\n' +
+                      'Verifique que:\n' +
+                      '• La cámara esté conectada\n' +
+                      '• Los drivers estén instalados\n' +
+                      '• La cámara funcione en otras aplicaciones');
+            } else if (errorName === 'NotReadableError') {
+                this.updateConnectionStatus('❌ Cámara en uso', 'error');
+                alert('⚠️ CÁMARA EN USO\n\nLa cámara está siendo usada por otra aplicación.\n\n' +
+                      'Soluciones:\n' +
+                      '• Cierre Zoom, Teams, Skype u otras apps de video\n' +
+                      '• Cierre otras pestañas que usen la cámara\n' +
+                      '• Recargue esta página');
+            } else {
+                this.updateConnectionStatus('❌ Error: No se puede acceder a la cámara', 'error');
+                alert(`⚠️ ERROR DE CÁMARA\n\n${errorMessage}\n\nPor favor recargue la página e intente nuevamente.`);
+            }
         }
     }
 
@@ -441,6 +477,61 @@ class TelemedicinePatient {
                 screenSize: `${window.screen.width}x${window.screen.height}`,
                 viewport: `${window.innerWidth}x${window.innerHeight}`
             }, 'diagnostic');
+
+            // ✅ VALIDACIÓN PREVIA: Verificar permisos de cámara/micrófono
+            this.logger.info('🔍 Validando permisos de media antes de conectar a Twilio', {
+                hasLocalStream: !!this.localStream,
+                videoTracks: this.localStream?.getVideoTracks()?.length || 0,
+                audioTracks: this.localStream?.getAudioTracks()?.length || 0
+            }, 'diagnostic');
+
+            if (!this.localStream) {
+                const errorMsg = '❌ No hay stream de cámara disponible. Debe permitir acceso a cámara/micrófono.';
+                this.logger.error(errorMsg, {
+                    sessionCode: this.sessionCode,
+                    suggestion: 'Verificar permisos del navegador para cámara y micrófono'
+                }, 'camera');
+                console.error(errorMsg);
+
+                this.updateConnectionStatus('❌ Error: Permita acceso a cámara y micrófono', 'error');
+                alert('⚠️ Debe permitir acceso a la cámara y micrófono para continuar.\n\nPor favor:\n1. Verifique los permisos del navegador\n2. Recargue la página\n3. Permita acceso cuando se le solicite');
+                return;
+            }
+
+            // Verificar que el stream tenga tracks activos
+            const videoTracks = this.localStream.getVideoTracks();
+            const audioTracks = this.localStream.getAudioTracks();
+
+            if (videoTracks.length === 0) {
+                const errorMsg = '❌ No se encontraron pistas de video en el stream';
+                this.logger.error(errorMsg, {
+                    sessionCode: this.sessionCode,
+                    audioTracks: audioTracks.length,
+                    streamActive: this.localStream.active
+                }, 'camera');
+                console.error(errorMsg);
+
+                this.updateConnectionStatus('❌ Error: No se detectó video de la cámara', 'error');
+                alert('⚠️ No se pudo acceder a la cámara.\n\nPosibles causas:\n• Otra aplicación está usando la cámara\n• Los permisos fueron denegados\n• La cámara está desconectada\n\nPor favor cierre otras aplicaciones y recargue la página.');
+                return;
+            }
+
+            // Verificar que los tracks estén en estado ready
+            const videoTrack = videoTracks[0];
+            if (videoTrack.readyState !== 'live') {
+                this.logger.warning('⚠️ Track de video no está en estado "live"', {
+                    readyState: videoTrack.readyState,
+                    enabled: videoTrack.enabled,
+                    muted: videoTrack.muted
+                }, 'camera');
+            }
+
+            this.logger.success('✅ Validación de media completada', {
+                videoTracks: videoTracks.length,
+                audioTracks: audioTracks.length,
+                videoState: videoTrack.readyState,
+                audioState: audioTracks[0]?.readyState || 'none'
+            }, 'camera');
 
             this.logger.info('Conectando a Twilio Video', {
                 sessionCode: this.sessionCode,
@@ -556,12 +647,92 @@ class TelemedicinePatient {
             });
 
         } catch (error) {
+            // 🔍 DIAGNÓSTICO: Detectar errores específicos de Twilio
+            const errorMessage = error.message || String(error);
+            const errorName = error.name || 'UnknownError';
+
             this.logger.error('Error conectando a Twilio', {
-                error: error.message,
+                error: errorMessage,
+                errorName: errorName,
+                errorCode: error.code,
                 stack: error.stack,
                 sessionCode: this.sessionCode
             }, 'twilio');
             console.error('❌ Error conectando a Twilio:', error);
+
+            // Mensajes específicos según el error
+            if (errorMessage.includes('Could not start video source')) {
+                this.logger.error('🎥 ERROR ESPECÍFICO: Could not start video source', {
+                    posiblesCausas: [
+                        'Cámara en uso por otra aplicación',
+                        'Permisos denegados o revocados',
+                        'Cámara desconectada físicamente',
+                        'Driver de cámara con problemas'
+                    ],
+                    diagnostico: {
+                        localStreamExists: !!this.localStream,
+                        videoTracks: this.localStream?.getVideoTracks()?.length || 0,
+                        videoTrackState: this.localStream?.getVideoTracks()[0]?.readyState || 'none'
+                    }
+                }, 'camera');
+
+                this.updateConnectionStatus('❌ Error: No se pudo iniciar la cámara', 'error');
+                alert('⚠️ NO SE PUDO INICIAR LA CÁMARA\n\n' +
+                      'Posibles causas:\n' +
+                      '• Otra aplicación (Zoom, Teams, etc.) está usando la cámara\n' +
+                      '• Los permisos fueron denegados\n' +
+                      '• La cámara está desconectada\n\n' +
+                      'Soluciones:\n' +
+                      '1. Cierre otras aplicaciones que usen la cámara\n' +
+                      '2. Verifique que la cámara esté conectada\n' +
+                      '3. Recargue la página y permita el acceso\n' +
+                      '4. Reinicie el navegador si el problema persiste');
+
+            } else if (errorMessage.includes('NotAllowedError') || errorName === 'NotAllowedError') {
+                this.logger.error('🔒 ERROR ESPECÍFICO: Permisos denegados', {
+                    errorName: errorName,
+                    userAgent: navigator.userAgent
+                }, 'camera');
+
+                this.updateConnectionStatus('❌ Error: Permisos de cámara denegados', 'error');
+                alert('⚠️ PERMISOS DENEGADOS\n\n' +
+                      'Debe permitir acceso a la cámara y micrófono.\n\n' +
+                      'Pasos:\n' +
+                      '1. Haga clic en el ícono 🔒 o ⓘ en la barra de direcciones\n' +
+                      '2. Cambie cámara y micrófono a "Permitir"\n' +
+                      '3. Recargue la página');
+
+            } else if (errorMessage.includes('NotFoundError') || errorName === 'NotFoundError') {
+                this.logger.error('📷 ERROR ESPECÍFICO: Cámara no encontrada', {
+                    errorName: errorName
+                }, 'camera');
+
+                this.updateConnectionStatus('❌ Error: Cámara no detectada', 'error');
+                alert('⚠️ CÁMARA NO DETECTADA\n\n' +
+                      'No se encontró ninguna cámara conectada.\n\n' +
+                      'Soluciones:\n' +
+                      '1. Conecte una cámara al dispositivo\n' +
+                      '2. Verifique que esté correctamente conectada\n' +
+                      '3. Reinicie el dispositivo si es necesario');
+
+            } else if (errorMessage.includes('SignalingConnectionDisconnectedError')) {
+                this.logger.error('🌐 ERROR ESPECÍFICO: Conexión de señalización perdida', {
+                    errorMessage: errorMessage
+                }, 'network');
+
+                this.updateConnectionStatus('❌ Error: Conexión de red perdida', 'error');
+                alert('⚠️ CONEXIÓN DE RED PERDIDA\n\n' +
+                      'No se pudo mantener la conexión con el servidor.\n\n' +
+                      'Soluciones:\n' +
+                      '1. Verifique su conexión a internet\n' +
+                      '2. Recargue la página\n' +
+                      '3. Intente desde otra red WiFi');
+
+            } else {
+                // Error genérico
+                this.updateConnectionStatus('❌ Error de conexión', 'error');
+                alert(`⚠️ ERROR DE CONEXIÓN\n\n${errorMessage}\n\nPor favor recargue la página e intente nuevamente.`);
+            }
         }
     }
 
