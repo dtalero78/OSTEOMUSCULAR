@@ -53,8 +53,14 @@ class WhatsAppNotifier {
      * Queue critical event for WhatsApp notification
      */
     queueNotification(event) {
-        // Only send critical events
-        if (event.level === 'error' || event.level === 'critical') {
+        // Send errors, criticals, and important Twilio events
+        const shouldSend = event.level === 'error' ||
+                          event.level === 'critical' ||
+                          (event.category === 'twilio' && event.level === 'info') ||  // Twilio connection steps
+                          (event.category === 'camera' && event.level === 'error') || // Camera errors
+                          (event.category === 'network' && event.level === 'error');  // Network errors
+
+        if (shouldSend) {
             this.messageQueue.push(event);
             this.processQueue();
         }
