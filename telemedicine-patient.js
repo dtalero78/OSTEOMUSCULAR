@@ -1559,6 +1559,12 @@ class TelemedicinePatient {
         this.loginScreen.style.display = 'none';
         this.examScreen.style.display = 'block';
 
+        // 🔍 CRÍTICO: Copiar sessionCode a campo oculto para detección del logger
+        const currentSessionCodeField = document.getElementById('currentSessionCode');
+        if (currentSessionCodeField && this.sessionCode) {
+            currentSessionCodeField.value = this.sessionCode;
+        }
+
         // Inicializar AudioManager para pre-carga
         if (typeof audioManager !== 'undefined') {
             this.audioManager = audioManager;

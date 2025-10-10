@@ -363,8 +363,14 @@ class Logger {
                 return doctorCodeDisplay.textContent.trim();
             }
 
-            // Paciente: buscar en sessionCodeInput
-            const patientCodeInput = document.getElementById('sessionCodeInput');
+            // Paciente (exam screen): buscar en currentSessionCode (hidden field)
+            const currentSessionCode = document.getElementById('currentSessionCode');
+            if (currentSessionCode && currentSessionCode.value) {
+                return currentSessionCode.value.trim().toUpperCase();
+            }
+
+            // Paciente (login screen): buscar en sessionCode
+            const patientCodeInput = document.getElementById('sessionCode');
             if (patientCodeInput && patientCodeInput.value) {
                 return patientCodeInput.value.trim().toUpperCase();
             }
