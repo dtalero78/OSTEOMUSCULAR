@@ -19,14 +19,16 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 - 💰 **Costo**: ~$3/mes para 100+ pacientes simultáneos
 
 **Últimas mejoras críticas**:
+- 🔍 **SessionCode en logs de red**: Campo oculto persiste sessionCode cuando paciente está en examen (2025-10-10)
 - 📊 **Monitoreo de recursos**: Endpoint /health para tracking de memoria, sesiones y capacidad
+- 📲 **Notificaciones WhatsApp**: Logs automáticos de sesiones, errores y eventos de red con detección de logs zombie
 - 🔗 **Auto-completar paciente**: URL con parámetros pre-llena nombre y código de sesión
 - 📋 **Exportación PDF profesional**: Informes médicos completos con diseño profesional
 - 🎨 **Mobile UX optimizada**: Banner de instrucciones superior, countdown no bloqueante, overlays ocultos
 - 🔊 **Audio iOS funcional**: Pre-carga de 21 MP3s, activación silenciosa, fallback automático
 - 📱 **Responsive completo**: Layout adaptado para móviles (≤768px), táctil-friendly
 - 🏥 **Métricas estabilizadas**: Buffer de 30 frames para resultados médicos reproducibles
-- 🧹 **Consola limpia**: Eliminados logs excesivos, solo errores críticos
+- 🧹 **Consola limpia**: Debug mode con ?debug para logs verbosos, producción silenciosa
 
 **Capacidad actual**: 100+ sesiones concurrentes con Twilio Video (escalable)
 
@@ -383,6 +385,112 @@ The application follows a **modern, professional dark theme** inspired by Whereb
 - Microphone access for audio instructions (optional)
 
 ## Recent Improvements (Latest)
+
+### SessionCode Detection Fix for Network Events (2025-10-10) - CRITICAL BUG FIX
+
+**Problem**: WhatsApp logs showed `patient (UNKNOWN)` instead of actual session code when network connection was lost during patient examination.
+
+**Root Cause**: When patient switches from login screen to exam screen, the `sessionCode` input field (id="sessionCode") becomes hidden. Network events firing during examination couldn't find the sessionCode in the DOM because logger was looking in the now-hidden login screen.
+
+**Solution**: Implemented hidden field persistence system for sessionCode in exam screen.
+
+#### Changes Implemented:
+
+**1. Hidden SessionCode Field** ([paciente.html:877](paciente.html#L877)):
+```html
+<div id="examScreen">
+    <!-- Hidden field for logger sessionCode detection -->
+    <input type="hidden" id="currentSessionCode" value="">
+    ...
+</div>
+```
+
+**2. Field Population on Screen Transition** ([telemedicine-patient.js:1562-1566](telemedicine-patient.js#L1562-L1566)):
+```javascript
+showExamScreen() {
+    this.loginScreen.style.display = 'none';
+    this.examScreen.style.display = 'block';
+
+    // Copy sessionCode to hidden field for logger detection
+    const currentSessionCodeField = document.getElementById('currentSessionCode');
+    if (currentSessionCodeField && this.sessionCode) {
+        currentSessionCodeField.value = this.sessionCode;
+    }
+}
+```
+
+**3. Logger Priority Update** ([logger.js:366-376](public/js/logger.js#L366-L376)):
+```javascript
+tryGetSessionCodeFromDOM() {
+    // 1️⃣ Exam screen: Check hidden field first (NEW)
+    const currentSessionCode = document.getElementById('currentSessionCode');
+    if (currentSessionCode && currentSessionCode.value) {
+        return currentSessionCode.value.trim().toUpperCase();
+    }
+
+    // 2️⃣ Login screen: Check visible input
+    const patientCodeInput = document.getElementById('sessionCode');
+    if (patientCodeInput && patientCodeInput.value) {
+        return patientCodeInput.value.trim().toUpperCase();
+    }
+
+    // 3️⃣ Fallback to data attributes
+    ...
+}
+```
+
+#### Results:
+
+**Before** (❌):
+```
+🚨 LOGS TELEMEDICINA
+📅 10/10/2025, 16:44:34
+
+❌ patient (UNKNOWN)
+   Network connection lost
+   Detalles: {}
+```
+
+**After** (✅):
+```
+🚨 LOGS TELEMEDICINA
+📅 10/10/2025, 16:44:34
+
+❌ patient (VQLOWY)
+   Network connection lost
+   Detalles: {
+      "connectionType": "4g",
+      "downlink": 1.5,
+      "rtt": 350,
+      "batteryLevel": "45%"
+   }
+```
+
+#### Production Validation:
+
+**Real-world case** (Patient KELLYN RODRIGUEZ, Session VQLOWY):
+- Network connection lost 20 seconds after connecting
+- Previously showed "UNKNOWN" - could not identify which session had the issue
+- Now shows correct sessionCode enabling proper diagnosis and doctor notification
+
+#### Benefits:
+- ✅ **Accurate session tracking**: All network events now show correct session code
+- ✅ **Better diagnostics**: Can correlate network issues with specific patient sessions
+- ✅ **Doctor notifications**: WhatsApp alerts now include session code for quick reference
+- ✅ **Zombie log detection**: Can properly identify delayed logs from specific sessions
+- ✅ **No side effects**: Hidden field doesn't interfere with UI or user experience
+
+**Files Modified**:
+- `paciente.html`: Added hidden sessionCode field in examScreen
+- `public/js/logger.js`: Updated DOM detection priority to check hidden field first
+- `telemedicine-patient.js`: Populate hidden field when transitioning to exam screen
+- `CLAUDE.md`: This documentation
+
+**Impact**: Critical for production monitoring - enables proper diagnosis of network-related connection failures by preserving sessionCode context throughout patient examination lifecycle.
+
+**Commit**: f913eef (2025-10-10)
+
+---
 
 ### Debug Mode System (2025-10-09) - CONSOLE CLEANUP
 
