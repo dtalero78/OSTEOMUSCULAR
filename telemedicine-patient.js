@@ -689,18 +689,70 @@ class TelemedicinePatient {
                       '4. Reinicie el navegador si el problema persiste');
 
             } else if (errorMessage.includes('NotAllowedError') || errorName === 'NotAllowedError') {
+                const browser = this.detectBrowser();
+                const platform = navigator.platform;
+
                 this.logger.error('🔒 ERROR ESPECÍFICO: Permisos denegados', {
                     errorName: errorName,
-                    userAgent: navigator.userAgent
+                    userAgent: navigator.userAgent,
+                    platform: platform,
+                    browser: browser
                 }, 'camera');
 
                 this.updateConnectionStatus('❌ Error: Permisos de cámara denegados', 'error');
+
+                // Mensajes específicos según navegador/plataforma
+                let instrucciones = '';
+
+                if (browser === 'Chrome' && platform.includes('Win')) {
+                    instrucciones = '🖥️ CHROME EN WINDOWS:\n\n' +
+                                  '1. Busque el ícono 🔒 o 🎥 a la IZQUIERDA de la barra de direcciones\n' +
+                                  '2. Haga clic en él\n' +
+                                  '3. Cambie "Cámara" y "Micrófono" a "Permitir"\n' +
+                                  '4. Haga clic en "Recargar" o presione F5\n\n' +
+                                  'Si no aparece el ícono:\n' +
+                                  '• Copie y pegue en la barra: chrome://settings/content/camera\n' +
+                                  '• Asegúrese de que esta página esté en "Permitidos"';
+                } else if (browser === 'Chrome') {
+                    instrucciones = '🌐 GOOGLE CHROME:\n\n' +
+                                  '1. Haga clic en el ícono 🔒 a la izquierda de la URL\n' +
+                                  '2. Seleccione "Permisos para este sitio"\n' +
+                                  '3. Cambie Cámara y Micrófono a "Permitir"\n' +
+                                  '4. Recargue la página (F5)';
+                } else if (browser === 'Safari') {
+                    instrucciones = '🍎 SAFARI (Mac/iPhone):\n\n' +
+                                  'En Mac:\n' +
+                                  '1. Safari → Configuración para [este sitio web]\n' +
+                                  '2. Cambie Cámara y Micrófono a "Permitir"\n' +
+                                  '3. Recargue la página\n\n' +
+                                  'En iPhone/iPad:\n' +
+                                  '1. Ajustes del dispositivo → Safari\n' +
+                                  '2. Busque "Cámara" → Permitir';
+                } else if (browser === 'Firefox') {
+                    instrucciones = '🦊 MOZILLA FIREFOX:\n\n' +
+                                  '1. Haga clic en el ícono 🔒 a la izquierda de la URL\n' +
+                                  '2. Haga clic en "Más información"\n' +
+                                  '3. Vaya a la pestaña "Permisos"\n' +
+                                  '4. Desmarque "Usar configuración predeterminada" en Cámara y Micrófono\n' +
+                                  '5. Seleccione "Permitir"\n' +
+                                  '6. Recargue la página';
+                } else if (browser === 'Edge') {
+                    instrucciones = '🌊 MICROSOFT EDGE:\n\n' +
+                                  '1. Haga clic en el ícono 🔒 en la barra de direcciones\n' +
+                                  '2. Haga clic en "Permisos para este sitio"\n' +
+                                  '3. Cambie Cámara y Micrófono a "Permitir"\n' +
+                                  '4. Recargue la página (F5)';
+                } else {
+                    instrucciones = 'PASOS GENERALES:\n\n' +
+                                  '1. Busque el ícono 🔒 o ⓘ en la barra de direcciones\n' +
+                                  '2. Busque la opción de permisos o configuración del sitio\n' +
+                                  '3. Cambie Cámara y Micrófono a "Permitir"\n' +
+                                  '4. Recargue la página';
+                }
+
                 alert('⚠️ PERMISOS DENEGADOS\n\n' +
-                      'Debe permitir acceso a la cámara y micrófono.\n\n' +
-                      'Pasos:\n' +
-                      '1. Haga clic en el ícono 🔒 o ⓘ en la barra de direcciones\n' +
-                      '2. Cambie cámara y micrófono a "Permitir"\n' +
-                      '3. Recargue la página');
+                      'Debe permitir acceso a la cámara y micrófono para continuar.\n\n' +
+                      instrucciones);
 
             } else if (errorMessage.includes('NotFoundError') || errorName === 'NotFoundError') {
                 this.logger.error('📷 ERROR ESPECÍFICO: Cámara no encontrada', {
@@ -1748,6 +1800,25 @@ class TelemedicinePatient {
         this.guidedAudioToggle.classList.toggle('active', this.audioEnabled);
 
         if (this.isDebugMode()) console.log(`🔊 Audio de instrucciones ${this.audioEnabled ? 'habilitado' : 'deshabilitado'}`);
+    }
+
+    // 🔍 DIAGNÓSTICO: Detectar navegador para mensajes específicos
+    detectBrowser() {
+        const userAgent = navigator.userAgent;
+
+        if (userAgent.includes('Edg/') || userAgent.includes('Edge/')) {
+            return 'Edge';
+        } else if (userAgent.includes('Chrome/') && !userAgent.includes('Edg/')) {
+            return 'Chrome';
+        } else if (userAgent.includes('Safari/') && !userAgent.includes('Chrome/')) {
+            return 'Safari';
+        } else if (userAgent.includes('Firefox/')) {
+            return 'Firefox';
+        } else if (userAgent.includes('Opera/') || userAgent.includes('OPR/')) {
+            return 'Opera';
+        } else {
+            return 'Unknown';
+        }
     }
 }
 

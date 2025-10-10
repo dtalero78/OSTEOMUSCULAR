@@ -539,13 +539,89 @@ class TelemedicineDoctor {
             });
 
         } catch (error) {
+            // 🔍 DIAGNÓSTICO: Detectar errores específicos de Twilio (Médico)
+            const errorMessage = error.message || String(error);
+            const errorName = error.name || 'UnknownError';
+
             this.logger.error('Error conectando a Twilio', {
-                error: error.message,
+                error: errorMessage,
+                errorName: errorName,
+                errorCode: error.code,
                 stack: error.stack,
                 sessionCode: this.sessionCode
             }, 'twilio');
             console.error('❌ Error conectando a Twilio:', error);
-            this.updateConnectionStatus('❌ Error de video', 'error');
+
+            // Mensajes específicos según el error
+            if (errorMessage.includes('Device in use') || errorMessage.includes('device in use')) {
+                this.logger.error('🎥 ERROR ESPECÍFICO: Device in use (Médico)', {
+                    posiblesCausas: [
+                        'Otra pestaña del navegador usando cámara',
+                        'Otra aplicación (Zoom, Teams, Meet) usando cámara',
+                        'Múltiples sesiones abiertas simultáneamente'
+                    ],
+                    sessionCode: this.sessionCode
+                }, 'camera');
+
+                this.updateConnectionStatus('❌ Cámara en uso por otra app', 'error');
+                alert('⚠️ CÁMARA EN USO\n\n' +
+                      'Su cámara está siendo usada por otra aplicación.\n\n' +
+                      'Posibles causas:\n' +
+                      '• Otra pestaña de este navegador usando la cámara\n' +
+                      '• Zoom, Teams, Meet u otra app de videollamada abierta\n' +
+                      '• Múltiples sesiones de telemedicina abiertas\n\n' +
+                      'Soluciones:\n' +
+                      '1. Cierre otras pestañas con videollamadas\n' +
+                      '2. Cierre aplicaciones de videollamada (Zoom, Teams, etc.)\n' +
+                      '3. Recargue esta página\n' +
+                      '4. Si el problema persiste, reinicie el navegador');
+
+            } else if (errorMessage.includes('Could not start video source')) {
+                this.logger.error('🎥 ERROR ESPECÍFICO: Could not start video source (Médico)', {
+                    sessionCode: this.sessionCode
+                }, 'camera');
+
+                this.updateConnectionStatus('❌ No se pudo iniciar la cámara', 'error');
+                alert('⚠️ NO SE PUDO INICIAR LA CÁMARA\n\n' +
+                      'No se pudo acceder a su cámara.\n\n' +
+                      'Soluciones:\n' +
+                      '1. Verifique que la cámara esté conectada\n' +
+                      '2. Cierre otras aplicaciones que usen la cámara\n' +
+                      '3. Permita el acceso cuando el navegador lo solicite\n' +
+                      '4. Recargue la página');
+
+            } else if (errorMessage.includes('NotAllowedError') || errorName === 'NotAllowedError') {
+                this.logger.error('🔒 ERROR ESPECÍFICO: Permisos denegados (Médico)', {
+                    errorName: errorName,
+                    userAgent: navigator.userAgent
+                }, 'camera');
+
+                this.updateConnectionStatus('❌ Permisos de cámara denegados', 'error');
+                alert('⚠️ PERMISOS DENEGADOS\n\n' +
+                      'Debe permitir acceso a la cámara y micrófono.\n\n' +
+                      'Pasos:\n' +
+                      '1. Haga clic en el ícono 🔒 o ⓘ en la barra de direcciones\n' +
+                      '2. Cambie cámara y micrófono a "Permitir"\n' +
+                      '3. Recargue la página');
+
+            } else if (errorMessage.includes('SignalingConnectionDisconnectedError')) {
+                this.logger.error('🌐 ERROR ESPECÍFICO: Conexión de señalización perdida (Médico)', {
+                    errorMessage: errorMessage
+                }, 'network');
+
+                this.updateConnectionStatus('❌ Conexión de red perdida', 'error');
+                alert('⚠️ CONEXIÓN DE RED PERDIDA\n\n' +
+                      'No se pudo mantener la conexión con el servidor.\n\n' +
+                      'Soluciones:\n' +
+                      '1. Verifique su conexión a internet\n' +
+                      '2. Recargue la página\n' +
+                      '3. Intente desde otra red si el problema persiste');
+
+            } else {
+                // Error genérico
+                this.updateConnectionStatus('❌ Error de video', 'error');
+                alert(`⚠️ ERROR DE CONEXIÓN\n\n${errorMessage}\n\nPor favor recargue la página e intente nuevamente.`);
+            }
         }
     }
 
