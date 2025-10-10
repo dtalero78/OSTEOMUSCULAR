@@ -62,13 +62,19 @@ class Logger {
      * Core logging method - all logs go through here
      */
     log(level, message, data = {}, category = 'general') {
+        // 🔍 CRÍTICO: Siempre intentar obtener sessionCode actualizado
+        const currentSessionCode = this.sessionCode ||
+                                   this.tryGetSessionCodeFromDOM() ||
+                                   this.tryGetSessionCodeFromURL() ||
+                                   'UNKNOWN';
+
         const logEntry = {
             timestamp: new Date().toISOString(),
             level, // 'info', 'warning', 'error', 'debug'
             category, // 'twilio', 'webrtc', 'socket', 'mediapipe', 'general'
             message,
             userType: this.userType,
-            sessionCode: this.sessionCode,
+            sessionCode: currentSessionCode,
             data: this.sanitizeData(data),
             browserInfo: this.browserInfo
         };
@@ -286,11 +292,35 @@ class Logger {
      */
     setupNetworkTracking() {
         window.addEventListener('online', () => {
-            this.success('Network connection restored', {}, 'network');
+            this.success('Network connection restored', {
+                connectionType: navigator.connection?.effectiveType || 'unknown',
+                downlink: navigator.connection?.downlink || 'unknown',
+                rtt: navigator.connection?.rtt || 'unknown'
+            }, 'network');
         });
 
         window.addEventListener('offline', () => {
-            this.error('Network connection lost', {}, 'network');
+            // 🔍 CRÍTICO: Capturar máximo contexto cuando se pierde la red
+            this.error('Network connection lost', {
+                lastOnlineTime: new Date().toISOString(),
+                connectionType: navigator.connection?.effectiveType || 'unknown',
+                downlink: navigator.connection?.downlink || 'unknown',
+                rtt: navigator.connection?.rtt || 'unknown',
+                pageVisible: document.visibilityState === 'visible',
+                batteryLevel: navigator.getBattery ? 'checking...' : 'unavailable'
+            }, 'network');
+
+            // Try to get battery info if available
+            if (navigator.getBattery) {
+                navigator.getBattery().then(battery => {
+                    this.warning('Battery info at disconnect', {
+                        level: Math.round(battery.level * 100) + '%',
+                        charging: battery.charging
+                    }, 'network');
+                }).catch(() => {
+                    // Silent fail
+                });
+            }
         });
     }
 
@@ -303,6 +333,52 @@ class Logger {
             this.flush(); // Final flush
             this.stopFlushInterval();
         });
+    }
+
+    /**
+     * 🔍 Try to get sessionCode from DOM elements
+     */
+    tryGetSessionCodeFromDOM() {
+        try {
+            // Médico: buscar en sessionCodeDisplay
+            const doctorCodeDisplay = document.getElementById('sessionCodeDisplay');
+            if (doctorCodeDisplay && doctorCodeDisplay.textContent !== '------') {
+                return doctorCodeDisplay.textContent.trim();
+            }
+
+            // Paciente: buscar en sessionCodeInput
+            const patientCodeInput = document.getElementById('sessionCodeInput');
+            if (patientCodeInput && patientCodeInput.value) {
+                return patientCodeInput.value.trim().toUpperCase();
+            }
+
+            // Buscar en cualquier elemento con data-session-code
+            const sessionElement = document.querySelector('[data-session-code]');
+            if (sessionElement) {
+                return sessionElement.dataset.sessionCode;
+            }
+        } catch (error) {
+            // Silent fail
+        }
+        return null;
+    }
+
+    /**
+     * 🔍 Try to get sessionCode from URL parameters
+     */
+    tryGetSessionCodeFromURL() {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionCode = urlParams.get('session') ||
+                              urlParams.get('codigo') ||
+                              urlParams.get('code');
+            if (sessionCode) {
+                return sessionCode.toUpperCase();
+            }
+        } catch (error) {
+            // Silent fail
+        }
+        return null;
     }
 
     /**
