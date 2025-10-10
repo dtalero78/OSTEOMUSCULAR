@@ -116,7 +116,16 @@ class WhatsAppNotifier {
 
         events.forEach((event, index) => {
             const icon = event.level === 'error' ? '❌' : '⚠️';
-            message += `${icon} *${event.userType}* (${event.sessionCode})\n`;
+
+            // 🧟 Marcar logs zombie
+            let zombieTag = '';
+            if (event.isZombie) {
+                zombieTag = ` 🧟 [ZOMBIE ${event.zombieDelayMinutes}m ago]`;
+            } else if (event.isDelayed) {
+                zombieTag = ` ⏱️ [delayed ${Math.floor(event.delayMs / 1000)}s]`;
+            }
+
+            message += `${icon} *${event.userType}* (${event.sessionCode})${zombieTag}\n`;
             message += `   ${event.message}\n`;
             if (event.details) {
                 message += `   Detalles: ${event.details}\n`;

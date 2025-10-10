@@ -179,11 +179,28 @@ class Logger {
         if (this.logBuffer.length === 0 || !this.socket) return;
 
         const logsToSend = [...this.logBuffer];
+        const batchTimestamp = new Date().toISOString();
         this.logBuffer = [];
+
+        // 🔍 CRÍTICO: Detectar logs zombie (enviados mucho después del evento)
+        logsToSend.forEach(log => {
+            log.sentAt = batchTimestamp;
+            const eventTime = new Date(log.timestamp).getTime();
+            const sendTime = new Date(batchTimestamp).getTime();
+            log.delayMs = sendTime - eventTime;
+
+            // Mark as zombie if sent > 60 seconds after event
+            if (log.delayMs > 60000) {
+                log.isZombie = true;
+                log.zombieDelayMinutes = Math.floor(log.delayMs / 60000);
+            } else if (log.delayMs > 5000) {
+                log.isDelayed = true;
+            }
+        });
 
         this.socket.emit('client-log', {
             logs: logsToSend,
-            batchTimestamp: new Date().toISOString()
+            batchTimestamp: batchTimestamp
         });
     }
 
