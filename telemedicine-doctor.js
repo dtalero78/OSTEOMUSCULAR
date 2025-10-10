@@ -185,6 +185,12 @@ class TelemedicineDoctor {
         this.patientName = document.getElementById('patientName');
         this.connectionTime = document.getElementById('connectionTime');
 
+        // Elementos de panel de participantes Twilio
+        this.twilioParticipantsPanel = document.getElementById('twilioParticipantsPanel');
+        this.twilioRoomName = document.getElementById('twilioRoomName');
+        this.twilioParticipantsCount = document.getElementById('twilioParticipantsCount');
+        this.twilioParticipantsList = document.getElementById('twilioParticipantsList');
+
         // Elementos de video
         this.patientVideoContainer = document.getElementById('patientVideoContainer');
         this.remoteVideo = document.getElementById('remoteVideo');
@@ -384,6 +390,17 @@ class TelemedicineDoctor {
 
     async joinTwilioRoom() {
         try {
+            // ✅ CRÍTICO: Prevenir reconexiones duplicadas
+            if (this.twilioRoom) {
+                this.logger.warning('⚠️ Ya conectado a sala Twilio - Ignorando reconexión', {
+                    roomName: this.twilioRoom.name,
+                    roomSid: this.twilioRoom.sid,
+                    state: this.twilioRoom.state
+                }, 'twilio');
+                console.warn('⚠️ Ya conectado a sala Twilio - Ignorando reconexión');
+                return;
+            }
+
             if (!this.sessionCode) {
                 const errorMsg = 'Médico no tiene sessionCode activo';
                 this.logger.error(errorMsg, { sessionCode: this.sessionCode }, 'twilio');
@@ -459,6 +476,9 @@ class TelemedicineDoctor {
             }, 'twilio');
             console.log('✅ Conectado a sala Twilio:', this.twilioRoom.name);
 
+            // 🔍 Actualizar panel de participantes al conectar
+            this.updateTwilioParticipantsPanel();
+
             // Manejar participantes remotos
             this.twilioRoom.on('participantConnected', participant => {
                 this.logger.success('Participante conectado a sala', {
@@ -468,6 +488,9 @@ class TelemedicineDoctor {
                 }, 'twilio');
                 console.log('👤 Participante conectado:', participant.identity);
                 this.handleRemoteParticipant(participant);
+
+                // 🔍 Actualizar panel de participantes
+                this.updateTwilioParticipantsPanel();
             });
 
             this.twilioRoom.on('participantDisconnected', participant => {
@@ -483,6 +506,9 @@ class TelemedicineDoctor {
                     this.videoPlaceholder.style.display = 'flex';
                     this.videoPlaceholder.textContent = 'Esperando paciente...';
                 }
+
+                // 🔍 Actualizar panel de participantes
+                this.updateTwilioParticipantsPanel();
             });
 
             // Network quality monitoring
@@ -1631,6 +1657,76 @@ class TelemedicineDoctor {
             this.connectionStatus.classList.remove('hidden');
         } else {
             this.connectionStatus.classList.add('hidden');
+        }
+    }
+
+    // 🔍 DIAGNÓSTICO: Actualizar panel de participantes Twilio
+    updateTwilioParticipantsPanel() {
+        if (!this.twilioRoom) {
+            this.twilioParticipantsPanel.classList.add('hidden');
+            return;
+        }
+
+        // Mostrar panel
+        this.twilioParticipantsPanel.classList.remove('hidden');
+
+        // Actualizar nombre de sala
+        this.twilioRoomName.textContent = this.twilioRoom.name;
+
+        // Contar participantes (incluyendo local)
+        const totalParticipants = this.twilioRoom.participants.size + 1; // +1 por el médico local
+        this.twilioParticipantsCount.textContent = totalParticipants;
+
+        // Generar lista de participantes
+        const participantsList = [];
+
+        // Médico local (yo)
+        participantsList.push(`
+            <div style="margin-bottom: 6px; padding: 6px; background: #2a5cd6; border-radius: 4px;">
+                <div style="font-weight: 600; color: #fff;">👨‍⚕️ ${this.twilioRoom.localParticipant.identity}</div>
+                <div style="font-size: 10px; color: #ccc;">SID: ${this.twilioRoom.localParticipant.sid}</div>
+                <div style="font-size: 10px; color: #90EE90;">Estado: ${this.twilioRoom.localParticipant.state} (local)</div>
+            </div>
+        `);
+
+        // Participantes remotos (pacientes)
+        this.twilioRoom.participants.forEach(participant => {
+            participantsList.push(`
+                <div style="margin-bottom: 6px; padding: 6px; background: #3a3b3c; border-radius: 4px;">
+                    <div style="font-weight: 600; color: #fff;">👤 ${participant.identity}</div>
+                    <div style="font-size: 10px; color: #ccc;">SID: ${participant.sid}</div>
+                    <div style="font-size: 10px; color: ${participant.state === 'connected' ? '#90EE90' : '#FFA500'};">
+                        Estado: ${participant.state}
+                    </div>
+                    <div style="font-size: 10px; color: #b0b3b8;">
+                        Tracks: ${participant.tracks.size} | Audio: ${participant.audioTracks.size} | Video: ${participant.videoTracks.size}
+                    </div>
+                </div>
+            `);
+        });
+
+        this.twilioParticipantsList.innerHTML = participantsList.length > 0
+            ? participantsList.join('')
+            : '<div style="color: #666;">No hay participantes</div>';
+
+        // 🔍 LOG CRÍTICO: Detectar reconexiones del médico
+        if (totalParticipants === 1) {
+            this.logger.warning('⚠️ DIAGNÓSTICO: Solo el médico en la sala (paciente no conectado)', {
+                roomName: this.twilioRoom.name,
+                roomSid: this.twilioRoom.sid,
+                totalParticipants: totalParticipants,
+                localIdentity: this.twilioRoom.localParticipant.identity
+            }, 'diagnostic');
+        } else if (totalParticipants > 2) {
+            this.logger.error('⚠️ DIAGNÓSTICO: MÁS DE 2 PARTICIPANTES EN LA SALA (posible reconexión duplicada)', {
+                roomName: this.twilioRoom.name,
+                totalParticipants: totalParticipants,
+                participants: Array.from(this.twilioRoom.participants.values()).map(p => ({
+                    identity: p.identity,
+                    sid: p.sid,
+                    state: p.state
+                }))
+            }, 'diagnostic');
         }
     }
 

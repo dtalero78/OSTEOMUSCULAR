@@ -410,12 +410,37 @@ class TelemedicinePatient {
 
     async joinTwilioRoom() {
         try {
+            // ✅ CRÍTICO: Prevenir reconexiones duplicadas
+            if (this.twilioRoom) {
+                this.logger.warning('⚠️ Ya conectado a sala Twilio - Ignorando reconexión', {
+                    roomName: this.twilioRoom.name,
+                    roomSid: this.twilioRoom.sid,
+                    state: this.twilioRoom.state
+                }, 'twilio');
+                console.warn('⚠️ Ya conectado a sala Twilio - Ignorando reconexión');
+                return;
+            }
+
             if (!this.sessionCode) {
                 const errorMsg = 'No hay sessionCode disponible para Twilio';
                 this.logger.error(errorMsg, { sessionCode: this.sessionCode }, 'twilio');
                 console.error('❌', errorMsg);
                 return;
             }
+
+            // 🔍 LOG: Capturar datos completos de URL y conexión
+            this.logger.info('🔍 DIAGNÓSTICO: Datos de conexión del paciente', {
+                url: window.location.href,
+                urlParams: window.location.search,
+                sessionCode: this.sessionCode,
+                patientName: this.patientData.name,
+                patientAge: this.patientData.age,
+                userAgent: navigator.userAgent,
+                browser: navigator.userAgentData?.brands || 'unknown',
+                platform: navigator.platform,
+                screenSize: `${window.screen.width}x${window.screen.height}`,
+                viewport: `${window.innerWidth}x${window.innerHeight}`
+            }, 'diagnostic');
 
             this.logger.info('Conectando a Twilio Video', {
                 sessionCode: this.sessionCode,
