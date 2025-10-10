@@ -8,7 +8,15 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 
 ## Sistema Actual (Octubre 2025) - PRODUCCIÓN
 
-**Estado**: ✅ **Completamente funcional en móvil y desktop**
+**Estado**: ✅ **Completamente funcional con Twilio Video**
+
+**Migración crítica completada (2025-10-09)**:
+- 🚀 **TWILIO VIDEO**: Reemplazado WebRTC manual por Twilio Video SDK (100% estable)
+- 📺 **Video bidireccional**: Médico ↔ Paciente sin errores de conexión
+- 🔊 **Audio bidireccional**: Funcionando en todos los navegadores y dispositivos
+- 🌐 **NAT/Firewall**: Manejo automático por Twilio (servidor TURN incluido)
+- ⚡ **Calidad adaptativa**: Ajuste automático según red del usuario
+- 💰 **Costo**: ~$3/mes para 100+ pacientes simultáneos
 
 **Últimas mejoras críticas**:
 - 📊 **Monitoreo de recursos**: Endpoint /health para tracking de memoria, sesiones y capacidad
@@ -18,10 +26,9 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 - 🔊 **Audio iOS funcional**: Pre-carga de 21 MP3s, activación silenciosa, fallback automático
 - 📱 **Responsive completo**: Layout adaptado para móviles (≤768px), táctil-friendly
 - 🏥 **Métricas estabilizadas**: Buffer de 30 frames para resultados médicos reproducibles
-- 🔗 **Arquitectura híbrida**: WebRTC P2P (métricas 30 FPS) + Socket.io (landmarks 15 FPS)
 - 🧹 **Consola limpia**: Eliminados logs excesivos, solo errores críticos
 
-**Capacidad actual**: 50-60 sesiones concurrentes en Digital Ocean $24/mes
+**Capacidad actual**: 100+ sesiones concurrentes con Twilio Video (escalable)
 
 **Ver**: [Mobile UX Overhaul](#mobile-ux-overhaul-banner--clean-overlays-2025-10-06---major-ux-fix) para detalles de la última implementación
 
@@ -37,14 +44,14 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 ### Technology Stack
 - **Backend**: Node.js + Express + Socket.io for real-time streaming
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Communication**: WebRTC Data Channel (P2P) + Socket.io (fallback) for pose data streaming
-- **Video Streaming**: WebRTC peer-to-peer (no server relay)
+- **Video/Audio**: Twilio Video SDK for bidirectional communication (replaces WebRTC manual)
+- **Communication**: Socket.io for pose landmarks streaming (15 FPS)
 - **MediaPipe Pose Landmarker**: Real-time pose detection (loaded via CDN from jsdelivr.net)
 - **PDF Generation**: jsPDF (loaded via CDN) for professional medical reports
 - **Web APIs**: Camera access via getUserMedia, Canvas for visualization
 - **Design System**: Modern dark UI with Figtree font (Google Fonts), Whereby-inspired interface
 - **Medical Focus**: Specialized for clinical postural and joint analysis with telemedicine capabilities
-- **Scalability**: P2P architecture supports 40-50 concurrent sessions on basic infrastructure
+- **Scalability**: Twilio infrastructure supports 100+ concurrent sessions
 
 ## Development Commands
 

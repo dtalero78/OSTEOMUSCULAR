@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Debug Mode</title>
+</head>
+<body>
+    <h1>Test Debug Mode Detection</h1>
+    <div id="results"></div>
+
+    <script src="/js/audio-manager.js"></script>
+    <script>
+        const results = document.getElementById('results');
+
+        // Test 1: URL actual
+        results.innerHTML += `<p><strong>URL actual:</strong> ${window.location.href}</p>`;
+        results.innerHTML += `<p><strong>Search params:</strong> ${window.location.search}</p>`;
+
+        // Test 2: URLSearchParams
+        const params = new URLSearchParams(window.location.search);
+        results.innerHTML += `<p><strong>Has 'debug':</strong> ${params.has('debug')}</p>`;
+
+        // Test 3: AudioManager antes de initialize
+        results.innerHTML += `<p><strong>AudioManager.debugMode (constructor):</strong> ${audioManager.debugMode}</p>`;
+
+        // Test 4: Initialize y ver debugMode
+        audioManager.initialize().then(() => {
+            results.innerHTML += `<p><strong>AudioManager.debugMode (después initialize):</strong> ${audioManager.debugMode}</p>`;
+        });
+    </script>
+</body>
+</html>

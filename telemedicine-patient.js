@@ -5,6 +5,11 @@
 
 class TelemedicinePatient {
     constructor() {
+        // ✅ LOGGING SYSTEM: Initialize logger
+        this.logger = new Logger('patient');
+        this.logger.initializeTracking();
+        this.logger.info('TelemedicinePatient initializing', {}, 'general');
+
         this.socket = io();
         this.poseLandmarker = null;
         this.video = null;
@@ -210,9 +215,15 @@ class TelemedicinePatient {
 
         // Sesión unida exitosamente
         this.socket.on('session-joined', ({ sessionCode, doctorData, message }) => {
+            this.logger.success('Conectado con médico', {
+                sessionCode: sessionCode,
+                doctorName: doctorData.name,
+                message: message
+            }, 'socket');
             console.log('✅ Conectado con médico:', message);
 
             this.sessionCode = sessionCode;
+            this.logger.setSessionCode(sessionCode);
             this.doctorData = doctorData;
             this.isConnected = true;
 
@@ -324,11 +335,13 @@ class TelemedicinePatient {
         const patientName = this.patientNameInput.value.trim();
 
         if (!sessionCode || sessionCode.length !== 6) {
+            this.logger.warning('Código de sesión inválido', { sessionCode }, 'general');
             alert('Por favor ingrese un código de sesión válido de 6 caracteres');
             return;
         }
 
         if (!patientName) {
+            this.logger.warning('Intento de conectar sin nombre', {}, 'general');
             alert('Por favor ingrese su nombre');
             return;
         }
@@ -337,6 +350,12 @@ class TelemedicinePatient {
             name: patientName,
             sessionId: Date.now()
         };
+
+        this.logger.info('Intentando conectar con médico', {
+            sessionCode: sessionCode,
+            patientName: patientName,
+            patientSessionId: this.patientData.sessionId
+        }, 'socket');
 
         this.updateConnectionStatus('🟡 Conectando con el médico...', 'connecting');
 
@@ -392,13 +411,25 @@ class TelemedicinePatient {
     async joinTwilioRoom() {
         try {
             if (!this.sessionCode) {
-                console.error('❌ No hay sessionCode disponible para Twilio');
+                const errorMsg = 'No hay sessionCode disponible para Twilio';
+                this.logger.error(errorMsg, { sessionCode: this.sessionCode }, 'twilio');
+                console.error('❌', errorMsg);
                 return;
             }
 
+            this.logger.info('Conectando a Twilio Video', {
+                sessionCode: this.sessionCode,
+                identity: `patient-${this.patientData.name}`
+            }, 'twilio');
             console.log('📺 Conectando a Twilio Video...');
 
             // Obtener token de Twilio
+            this.logger.debug('Solicitando token de Twilio', {
+                endpoint: '/twilio-token',
+                identity: `patient-${this.patientData.name}`,
+                room: this.sessionCode
+            }, 'twilio');
+
             const response = await fetch('/twilio-token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -408,10 +439,29 @@ class TelemedicinePatient {
                 })
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const data = await response.json();
             this.twilioToken = data.token;
 
+            this.logger.success('Token de Twilio obtenido', {
+                tokenLength: this.twilioToken?.length,
+                room: data.room,
+                identity: data.identity
+            }, 'twilio');
+
             // Conectar a sala de Twilio con video/audio local
+            this.logger.info('Iniciando conexión a sala Twilio', {
+                room: this.sessionCode,
+                config: {
+                    audio: true,
+                    video: { width: 640, height: 480 },
+                    networkQuality: { local: 1, remote: 1 }
+                }
+            }, 'twilio');
+
             this.twilioRoom = await Twilio.Video.connect(this.twilioToken, {
                 name: this.sessionCode,
                 audio: true,
@@ -419,15 +469,31 @@ class TelemedicinePatient {
                 networkQuality: { local: 1, remote: 1 }
             });
 
+            this.logger.success('Conectado a sala Twilio', {
+                roomName: this.twilioRoom.name,
+                roomSid: this.twilioRoom.sid,
+                localParticipantSid: this.twilioRoom.localParticipant.sid,
+                localParticipantIdentity: this.twilioRoom.localParticipant.identity,
+                state: this.twilioRoom.state
+            }, 'twilio');
             console.log('✅ Conectado a sala Twilio:', this.twilioRoom.name);
 
             // Manejar participantes remotos (médico)
             this.twilioRoom.on('participantConnected', participant => {
+                this.logger.success('Médico conectado a sala', {
+                    identity: participant.identity,
+                    sid: participant.sid,
+                    state: participant.state
+                }, 'twilio');
                 console.log('👨‍⚕️ Médico conectado:', participant.identity);
                 this.handleRemoteParticipant(participant);
             });
 
             this.twilioRoom.on('participantDisconnected', participant => {
+                this.logger.warning('Médico desconectado de sala', {
+                    identity: participant.identity,
+                    sid: participant.sid
+                }, 'twilio');
                 console.log('👨‍⚕️ Médico desconectado:', participant.identity);
                 if (this.doctorVideo) {
                     this.doctorVideo.srcObject = null;
@@ -437,19 +503,60 @@ class TelemedicinePatient {
                 }
             });
 
+            // Network quality monitoring
+            this.twilioRoom.on('reconnecting', error => {
+                this.logger.warning('Sala Twilio reconectando', {
+                    error: error?.message
+                }, 'network');
+            });
+
+            this.twilioRoom.on('reconnected', () => {
+                this.logger.success('Sala Twilio reconectada', {}, 'network');
+            });
+
+            this.twilioRoom.on('disconnected', (room, error) => {
+                this.logger.warning('Desconectado de sala Twilio', {
+                    roomName: room.name,
+                    error: error?.message
+                }, 'twilio');
+            });
+
             // Si ya hay participantes
             this.twilioRoom.participants.forEach(participant => {
+                this.logger.info('Médico ya presente en sala', {
+                    identity: participant.identity,
+                    sid: participant.sid
+                }, 'twilio');
                 this.handleRemoteParticipant(participant);
             });
 
         } catch (error) {
+            this.logger.error('Error conectando a Twilio', {
+                error: error.message,
+                stack: error.stack,
+                sessionCode: this.sessionCode
+            }, 'twilio');
             console.error('❌ Error conectando a Twilio:', error);
         }
     }
 
     handleRemoteParticipant(participant) {
+        this.logger.info('Manejando participante remoto (médico)', {
+            identity: participant.identity,
+            sid: participant.sid,
+            tracksCount: participant.tracks.size
+        }, 'twilio');
+
         // Manejar tracks existentes
         participant.tracks.forEach(publication => {
+            this.logger.debug('Track publication encontrado', {
+                trackSid: publication.trackSid,
+                trackName: publication.trackName,
+                kind: publication.kind,
+                isSubscribed: publication.isSubscribed,
+                isEnabled: publication.isEnabled
+            }, 'twilio');
+
             if (publication.track) {
                 this.attachTrack(publication.track);
             }
@@ -457,34 +564,107 @@ class TelemedicinePatient {
 
         // Manejar nuevos tracks
         participant.on('trackSubscribed', track => {
+            this.logger.success('Track subscrito (médico)', {
+                trackSid: track.sid,
+                trackName: track.name,
+                kind: track.kind,
+                isEnabled: track.isEnabled,
+                isStarted: track.isStarted
+            }, 'twilio');
             this.attachTrack(track);
         });
 
         participant.on('trackUnsubscribed', track => {
+            this.logger.warning('Track no subscrito (médico)', {
+                trackSid: track.sid,
+                trackName: track.name,
+                kind: track.kind
+            }, 'twilio');
             track.detach().forEach(element => element.remove());
         });
     }
 
     attachTrack(track) {
+        this.logger.info('Adjuntando track (médico)', {
+            trackSid: track.sid,
+            trackName: track.name,
+            kind: track.kind,
+            isEnabled: track.isEnabled,
+            isStarted: track.isStarted,
+            mediaStreamTrack: track.mediaStreamTrack?.readyState
+        }, 'twilio');
+
         if (track.kind === 'video' && this.doctorVideo) {
-            track.attach(this.doctorVideo);
+            try {
+                track.attach(this.doctorVideo);
 
-            // Ocultar placeholder
-            if (this.doctorVideoPlaceholder) {
-                this.doctorVideoPlaceholder.style.display = 'none';
+                // Ocultar placeholder
+                if (this.doctorVideoPlaceholder) {
+                    this.doctorVideoPlaceholder.style.display = 'none';
+                }
+
+                // Mostrar video
+                this.doctorVideo.style.display = 'block';
+
+                this.logger.success('Video del médico conectado', {
+                    videoWidth: this.doctorVideo.videoWidth,
+                    videoHeight: this.doctorVideo.videoHeight,
+                    readyState: this.doctorVideo.readyState
+                }, 'twilio');
+                console.log('✅ Video del médico conectado (Twilio)');
+
+                // Monitor video element state
+                this.doctorVideo.addEventListener('loadedmetadata', () => {
+                    this.logger.info('Video metadata cargada (médico)', {
+                        videoWidth: this.doctorVideo.videoWidth,
+                        videoHeight: this.doctorVideo.videoHeight
+                    }, 'twilio');
+                });
+
+                this.doctorVideo.addEventListener('error', (e) => {
+                    this.logger.error('Error en elemento de video (médico)', {
+                        error: e.message || 'Unknown error',
+                        code: this.doctorVideo.error?.code,
+                        message: this.doctorVideo.error?.message
+                    }, 'twilio');
+                });
+
+            } catch (error) {
+                this.logger.error('Error adjuntando track de video (médico)', {
+                    error: error.message,
+                    stack: error.stack
+                }, 'twilio');
             }
-
-            // Mostrar video
-            this.doctorVideo.style.display = 'block';
-
-            console.log('✅ Video del médico conectado (Twilio)');
         }
 
         if (track.kind === 'audio') {
-            const audioElement = track.attach();
-            audioElement.style.display = 'none';
-            document.body.appendChild(audioElement);
-            console.log('✅ Audio del médico conectado (Twilio)');
+            try {
+                const audioElement = track.attach();
+                audioElement.style.display = 'none';
+                document.body.appendChild(audioElement);
+
+                this.logger.success('Audio del médico conectado', {
+                    audioVolume: audioElement.volume,
+                    muted: audioElement.muted,
+                    readyState: audioElement.readyState
+                }, 'twilio');
+                console.log('✅ Audio del médico conectado (Twilio)');
+
+                // Monitor audio element state
+                audioElement.addEventListener('error', (e) => {
+                    this.logger.error('Error en elemento de audio (médico)', {
+                        error: e.message || 'Unknown error',
+                        code: audioElement.error?.code,
+                        message: audioElement.error?.message
+                    }, 'twilio');
+                });
+
+            } catch (error) {
+                this.logger.error('Error adjuntando track de audio (médico)', {
+                    error: error.message,
+                    stack: error.stack
+                }, 'twilio');
+            }
         }
     }
 

@@ -5,6 +5,11 @@
 
 class TelemedicineDoctor {
     constructor() {
+        // ✅ LOGGING SYSTEM: Initialize logger
+        this.logger = new Logger('doctor');
+        this.logger.initializeTracking();
+        this.logger.info('TelemedicineDoctor initializing', {}, 'general');
+
         this.socket = io();
         this.canvas = null;
         this.ctx = null;
@@ -276,9 +281,14 @@ class TelemedicineDoctor {
 
         // Sesión creada
         this.socket.on('session-created', ({ sessionCode, message }) => {
+            this.logger.success('Sesión creada', {
+                sessionCode: sessionCode,
+                message: message
+            }, 'socket');
             console.log('✅ Sesión creada:', sessionCode);
 
             this.sessionCode = sessionCode;
+            this.logger.setSessionCode(sessionCode);
             this.isSessionActive = true;
 
             this.sessionCodeDisplay.textContent = sessionCode;
@@ -296,6 +306,12 @@ class TelemedicineDoctor {
 
         // Paciente conectado
         this.socket.on('patient-connected', ({ sessionCode, patientData, message }) => {
+            this.logger.success('Paciente conectado', {
+                sessionCode: sessionCode,
+                patientName: patientData.name,
+                patientSessionId: patientData.sessionId,
+                message: message
+            }, 'socket');
             console.log('👤 Paciente conectado:', patientData);
 
             this.patientData = patientData;
@@ -369,18 +385,32 @@ class TelemedicineDoctor {
     async joinTwilioRoom() {
         try {
             if (!this.sessionCode) {
-                console.error('❌ Médico no tiene sessionCode activo');
+                const errorMsg = 'Médico no tiene sessionCode activo';
+                this.logger.error(errorMsg, { sessionCode: this.sessionCode }, 'twilio');
+                console.error('❌', errorMsg);
                 return;
             }
 
             if (!this.patientConnected) {
-                console.error('❌ No hay paciente conectado');
+                const errorMsg = 'No hay paciente conectado';
+                this.logger.error(errorMsg, {}, 'twilio');
+                console.error('❌', errorMsg);
                 return;
             }
 
+            this.logger.info('Conectando a Twilio Video', {
+                sessionCode: this.sessionCode,
+                identity: `doctor-${this.doctorData.name}`
+            }, 'twilio');
             console.log('📺 Conectando a Twilio Video...');
 
             // Obtener token de Twilio
+            this.logger.debug('Solicitando token de Twilio', {
+                endpoint: '/twilio-token',
+                identity: `doctor-${this.doctorData.name}`,
+                room: this.sessionCode
+            }, 'twilio');
+
             const response = await fetch('/twilio-token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -390,10 +420,29 @@ class TelemedicineDoctor {
                 })
             });
 
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
             const data = await response.json();
             this.twilioToken = data.token;
 
+            this.logger.success('Token de Twilio obtenido', {
+                tokenLength: this.twilioToken?.length,
+                room: data.room,
+                identity: data.identity
+            }, 'twilio');
+
             // Conectar a sala de Twilio
+            this.logger.info('Iniciando conexión a sala Twilio', {
+                room: this.sessionCode,
+                config: {
+                    audio: true,
+                    video: true,
+                    networkQuality: { local: 1, remote: 1 }
+                }
+            }, 'twilio');
+
             this.twilioRoom = await Twilio.Video.connect(this.twilioToken, {
                 name: this.sessionCode,
                 audio: true,
@@ -401,15 +450,31 @@ class TelemedicineDoctor {
                 networkQuality: { local: 1, remote: 1 }
             });
 
+            this.logger.success('Conectado a sala Twilio', {
+                roomName: this.twilioRoom.name,
+                roomSid: this.twilioRoom.sid,
+                localParticipantSid: this.twilioRoom.localParticipant.sid,
+                localParticipantIdentity: this.twilioRoom.localParticipant.identity,
+                state: this.twilioRoom.state
+            }, 'twilio');
             console.log('✅ Conectado a sala Twilio:', this.twilioRoom.name);
 
             // Manejar participantes remotos
             this.twilioRoom.on('participantConnected', participant => {
+                this.logger.success('Participante conectado a sala', {
+                    identity: participant.identity,
+                    sid: participant.sid,
+                    state: participant.state
+                }, 'twilio');
                 console.log('👤 Participante conectado:', participant.identity);
                 this.handleRemoteParticipant(participant);
             });
 
             this.twilioRoom.on('participantDisconnected', participant => {
+                this.logger.warning('Participante desconectado de sala', {
+                    identity: participant.identity,
+                    sid: participant.sid
+                }, 'twilio');
                 console.log('👤 Participante desconectado:', participant.identity);
                 if (this.remoteVideo) {
                     this.remoteVideo.srcObject = null;
@@ -420,20 +485,61 @@ class TelemedicineDoctor {
                 }
             });
 
+            // Network quality monitoring
+            this.twilioRoom.on('reconnecting', error => {
+                this.logger.warning('Sala Twilio reconectando', {
+                    error: error?.message
+                }, 'network');
+            });
+
+            this.twilioRoom.on('reconnected', () => {
+                this.logger.success('Sala Twilio reconectada', {}, 'network');
+            });
+
+            this.twilioRoom.on('disconnected', (room, error) => {
+                this.logger.warning('Desconectado de sala Twilio', {
+                    roomName: room.name,
+                    error: error?.message
+                }, 'twilio');
+            });
+
             // Si ya hay participantes
             this.twilioRoom.participants.forEach(participant => {
+                this.logger.info('Participante ya presente en sala', {
+                    identity: participant.identity,
+                    sid: participant.sid
+                }, 'twilio');
                 this.handleRemoteParticipant(participant);
             });
 
         } catch (error) {
+            this.logger.error('Error conectando a Twilio', {
+                error: error.message,
+                stack: error.stack,
+                sessionCode: this.sessionCode
+            }, 'twilio');
             console.error('❌ Error conectando a Twilio:', error);
             this.updateConnectionStatus('❌ Error de video', 'error');
         }
     }
 
     handleRemoteParticipant(participant) {
+        this.logger.info('Manejando participante remoto', {
+            identity: participant.identity,
+            sid: participant.sid,
+            tracksCount: participant.tracks.size
+        }, 'twilio');
+
         // Manejar tracks existentes
         participant.tracks.forEach(publication => {
+            this.logger.debug('Track publication encontrado', {
+                trackSid: publication.trackSid,
+                trackName: publication.trackName,
+                kind: publication.kind,
+                isSubscribed: publication.isSubscribed,
+                isEnabled: publication.isEnabled
+            }, 'twilio');
+
             if (publication.track) {
                 this.attachTrack(publication.track);
             }
@@ -441,40 +547,128 @@ class TelemedicineDoctor {
 
         // Manejar nuevos tracks
         participant.on('trackSubscribed', track => {
+            this.logger.success('Track subscrito', {
+                trackSid: track.sid,
+                trackName: track.name,
+                kind: track.kind,
+                isEnabled: track.isEnabled,
+                isStarted: track.isStarted
+            }, 'twilio');
             this.attachTrack(track);
         });
 
         participant.on('trackUnsubscribed', track => {
+            this.logger.warning('Track no subscrito', {
+                trackSid: track.sid,
+                trackName: track.name,
+                kind: track.kind
+            }, 'twilio');
             track.detach().forEach(element => element.remove());
+        });
+
+        // Track publication events
+        participant.on('trackPublished', publication => {
+            this.logger.info('Track publicado por participante', {
+                trackSid: publication.trackSid,
+                kind: publication.kind
+            }, 'twilio');
+        });
+
+        participant.on('trackUnpublished', publication => {
+            this.logger.warning('Track no publicado por participante', {
+                trackSid: publication.trackSid,
+                kind: publication.kind
+            }, 'twilio');
         });
     }
 
     attachTrack(track) {
+        this.logger.info('Adjuntando track', {
+            trackSid: track.sid,
+            trackName: track.name,
+            kind: track.kind,
+            isEnabled: track.isEnabled,
+            isStarted: track.isStarted,
+            mediaStreamTrack: track.mediaStreamTrack?.readyState
+        }, 'twilio');
+
         if (track.kind === 'video') {
-            track.attach(this.remoteVideo);
+            try {
+                track.attach(this.remoteVideo);
 
-            // Ocultar placeholder
-            if (this.videoPlaceholder) {
-                this.videoPlaceholder.style.display = 'none';
-            }
+                // Ocultar placeholder
+                if (this.videoPlaceholder) {
+                    this.videoPlaceholder.style.display = 'none';
+                }
 
-            // Mostrar video
-            this.remoteVideo.style.display = 'block';
-            this.remoteVideo.style.visibility = 'visible';
+                // Mostrar video
+                this.remoteVideo.style.display = 'block';
+                this.remoteVideo.style.visibility = 'visible';
 
-            console.log('✅ Video del paciente conectado (Twilio)');
+                this.logger.success('Video del paciente conectado', {
+                    videoWidth: this.remoteVideo.videoWidth,
+                    videoHeight: this.remoteVideo.videoHeight,
+                    readyState: this.remoteVideo.readyState
+                }, 'twilio');
+                console.log('✅ Video del paciente conectado (Twilio)');
 
-            // Info del video
-            if (this.videoInfo) {
-                this.videoInfo.textContent = 'Video en vivo (Twilio)';
+                // Info del video
+                if (this.videoInfo) {
+                    this.videoInfo.textContent = 'Video en vivo (Twilio)';
+                }
+
+                // Monitor video element state
+                this.remoteVideo.addEventListener('loadedmetadata', () => {
+                    this.logger.info('Video metadata cargada', {
+                        videoWidth: this.remoteVideo.videoWidth,
+                        videoHeight: this.remoteVideo.videoHeight
+                    }, 'twilio');
+                });
+
+                this.remoteVideo.addEventListener('error', (e) => {
+                    this.logger.error('Error en elemento de video', {
+                        error: e.message || 'Unknown error',
+                        code: this.remoteVideo.error?.code,
+                        message: this.remoteVideo.error?.message
+                    }, 'twilio');
+                });
+
+            } catch (error) {
+                this.logger.error('Error adjuntando track de video', {
+                    error: error.message,
+                    stack: error.stack
+                }, 'twilio');
             }
         }
 
         if (track.kind === 'audio') {
-            const audioElement = track.attach();
-            audioElement.style.display = 'none';
-            document.body.appendChild(audioElement);
-            console.log('✅ Audio del paciente conectado (Twilio)');
+            try {
+                const audioElement = track.attach();
+                audioElement.style.display = 'none';
+                document.body.appendChild(audioElement);
+
+                this.logger.success('Audio del paciente conectado', {
+                    audioVolume: audioElement.volume,
+                    muted: audioElement.muted,
+                    readyState: audioElement.readyState
+                }, 'twilio');
+                console.log('✅ Audio del paciente conectado (Twilio)');
+
+                // Monitor audio element state
+                audioElement.addEventListener('error', (e) => {
+                    this.logger.error('Error en elemento de audio', {
+                        error: e.message || 'Unknown error',
+                        code: audioElement.error?.code,
+                        message: audioElement.error?.message
+                    }, 'twilio');
+                });
+
+            } catch (error) {
+                this.logger.error('Error adjuntando track de audio', {
+                    error: error.message,
+                    stack: error.stack
+                }, 'twilio');
+            }
         }
     }
 
@@ -498,6 +692,7 @@ class TelemedicineDoctor {
         const doctorName = this.doctorNameInput.value.trim();
 
         if (!doctorName) {
+            this.logger.warning('Intento de crear sesión sin nombre', {}, 'general');
             alert('Por favor ingrese su nombre');
             return;
         }
@@ -506,6 +701,11 @@ class TelemedicineDoctor {
             name: doctorName,
             sessionId: Date.now()
         };
+
+        this.logger.info('Creando sesión de médico', {
+            doctorName: doctorName,
+            sessionId: this.doctorData.sessionId
+        }, 'socket');
 
         this.socket.emit('doctor-register', this.doctorData);
     }

@@ -10,6 +10,7 @@ const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
 const twilio = require('twilio');
+const whatsappNotifier = require('./whatsapp-notifier');
 
 const app = express();
 const server = http.createServer(app);
@@ -41,6 +42,10 @@ const connectionMetrics = {
     totalPoseDataMessages: 0
 };
 
+// ✅ LOGGING SYSTEM: Almacenar logs de clientes
+const clientLogs = [];
+const MAX_LOGS_IN_MEMORY = 5000; // Mantener últimos 5000 logs
+
 // Rutas principales
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -52,6 +57,520 @@ app.get('/paciente', (req, res) => {
 
 app.get('/medico', (req, res) => {
     res.sendFile(path.join(__dirname, 'medico.html'));
+});
+
+// ✅ LOGGING SYSTEM: Dashboard de logs
+app.get('/logs', (req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Logs - Telemedicina</title>
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Figtree', sans-serif;
+            background: #1c1e21;
+            color: #e4e6eb;
+            padding: 20px;
+        }
+
+        .header {
+            background: #242527;
+            border: 1px solid #3a3b3c;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #5b8def;
+        }
+
+        .stats {
+            display: flex;
+            gap: 24px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: #1c1e21;
+            border: 1px solid #3a3b3c;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #b0b3b8;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #5b8def;
+        }
+
+        .filters {
+            background: #242527;
+            border: 1px solid #3a3b3c;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-group label {
+            font-size: 12px;
+            color: #b0b3b8;
+            font-weight: 500;
+        }
+
+        input, select, button {
+            background: #1c1e21;
+            color: #e4e6eb;
+            border: 1px solid #3a3b3c;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-family: 'Figtree', sans-serif;
+            font-size: 14px;
+        }
+
+        button {
+            background: #5b8def;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #4a7ad6;
+        }
+
+        button.danger {
+            background: #e85d55;
+        }
+
+        button.danger:hover {
+            background: #d64a42;
+        }
+
+        .logs-container {
+            background: #242527;
+            border: 1px solid #3a3b3c;
+            border-radius: 12px;
+            padding: 16px;
+            max-height: calc(100vh - 400px);
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            background: #1c1e21;
+            border: 1px solid #3a3b3c;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .log-entry.info {
+            border-left: 4px solid #5b8def;
+        }
+
+        .log-entry.success {
+            border-left: 4px solid #5ebd6d;
+        }
+
+        .log-entry.warning {
+            border-left: 4px solid #f7b928;
+        }
+
+        .log-entry.error {
+            border-left: 4px solid #e85d55;
+        }
+
+        .log-entry.debug {
+            border-left: 4px solid #b0b3b8;
+            opacity: 0.8;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .log-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: #b0b3b8;
+        }
+
+        .log-message {
+            color: #e4e6eb;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .log-data {
+            background: rgba(91, 141, 239, 0.05);
+            border-radius: 4px;
+            padding: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #b0b3b8;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.doctor {
+            background: #5b8def;
+            color: white;
+        }
+
+        .badge.patient {
+            background: #5ebd6d;
+            color: white;
+        }
+
+        .badge.twilio {
+            background: #e85d55;
+            color: white;
+        }
+
+        .badge.socket {
+            background: #f7b928;
+            color: white;
+        }
+
+        .badge.mediapipe {
+            background: #9b59b6;
+            color: white;
+        }
+
+        .badge.network {
+            background: #3498db;
+            color: white;
+        }
+
+        .badge.general {
+            background: #b0b3b8;
+            color: white;
+        }
+
+        .no-logs {
+            text-align: center;
+            padding: 40px;
+            color: #b0b3b8;
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .auto-refresh input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .refreshing {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Sistema de Logs - Telemedicina</h1>
+        <p style="color: #b0b3b8; margin-top: 8px;">Monitoreo en tiempo real de conexiones Twilio Video</p>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">Total de Logs</div>
+                <div class="stat-value" id="totalLogs">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Errores</div>
+                <div class="stat-value" style="color: #e85d55;" id="errorCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Advertencias</div>
+                <div class="stat-value" style="color: #f7b928;" id="warningCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Sesiones Activas</div>
+                <div class="stat-value" style="color: #5ebd6d;" id="activeSessions">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="filters">
+        <div class="filter-group">
+            <label>Código de Sesión</label>
+            <input type="text" id="filterSession" placeholder="Ej: ABC123" maxlength="6">
+        </div>
+
+        <div class="filter-group">
+            <label>Usuario</label>
+            <select id="filterUser">
+                <option value="">Todos</option>
+                <option value="doctor">Médico</option>
+                <option value="patient">Paciente</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Categoría</label>
+            <select id="filterCategory">
+                <option value="">Todas</option>
+                <option value="twilio">Twilio</option>
+                <option value="socket">Socket.io</option>
+                <option value="mediapipe">MediaPipe</option>
+                <option value="network">Network</option>
+                <option value="general">General</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>Nivel</label>
+            <select id="filterLevel">
+                <option value="">Todos</option>
+                <option value="info">Info</option>
+                <option value="success">Success</option>
+                <option value="warning">Warning</option>
+                <option value="error">Error</option>
+                <option value="debug">Debug</option>
+            </select>
+        </div>
+
+        <div class="filter-group" style="margin-left: auto;">
+            <label>Acciones</label>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="applyFilters()">🔍 Filtrar</button>
+                <button onclick="clearFilters()">🔄 Limpiar</button>
+                <button class="danger" onclick="clearLogs()">🗑️ Borrar Todo</button>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <label>Auto-actualizar</label>
+            <div class="auto-refresh">
+                <input type="checkbox" id="autoRefresh" checked>
+                <span id="refreshStatus">⚪</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="logs-container" id="logsContainer">
+        <div class="no-logs">Cargando logs...</div>
+    </div>
+
+    <script>
+        let allLogs = [];
+        let autoRefreshInterval = null;
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/logs');
+                const data = await response.json();
+                allLogs = data.logs || [];
+
+                // Update stats
+                document.getElementById('totalLogs').textContent = data.totalLogs;
+                document.getElementById('errorCount').textContent = data.errorCount;
+                document.getElementById('warningCount').textContent = data.warningCount;
+                document.getElementById('activeSessions').textContent = data.activeSessions;
+
+                renderLogs(allLogs);
+
+                // Update refresh status
+                const status = document.getElementById('refreshStatus');
+                status.textContent = '🟢';
+                setTimeout(() => {
+                    status.textContent = '⚪';
+                }, 500);
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                document.getElementById('refreshStatus').textContent = '🔴';
+            }
+        }
+
+        function renderLogs(logs) {
+            const container = document.getElementById('logsContainer');
+
+            if (logs.length === 0) {
+                container.innerHTML = '<div class="no-logs">No hay logs para mostrar</div>';
+                return;
+            }
+
+            // Sort by timestamp (newest first)
+            logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            container.innerHTML = logs.map(log => {
+                const time = new Date(log.timestamp).toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    fractionalSecondDigits: 3
+                });
+
+                const dataStr = log.data && Object.keys(log.data).length > 0
+                    ? JSON.stringify(log.data, null, 2)
+                    : null;
+
+                return \`
+                    <div class="log-entry \${log.level}">
+                        <div class="log-header">
+                            <div class="log-meta">
+                                <span>\${time}</span>
+                                <span class="badge \${log.userType}">\${log.userType}</span>
+                                <span class="badge \${log.category}">\${log.category}</span>
+                                \${log.sessionCode ? \`<span>📋 \${log.sessionCode}</span>\` : ''}
+                                \${log.browserInfo ? \`<span>🌐 \${log.browserInfo.browserName}</span>\` : ''}
+                            </div>
+                        </div>
+                        <div class="log-message">\${log.message}</div>
+                        \${dataStr ? \`<div class="log-data">\${dataStr}</div>\` : ''}
+                    </div>
+                \`;
+            }).join('');
+        }
+
+        function applyFilters() {
+            const sessionFilter = document.getElementById('filterSession').value.trim().toUpperCase();
+            const userFilter = document.getElementById('filterUser').value;
+            const categoryFilter = document.getElementById('filterCategory').value;
+            const levelFilter = document.getElementById('filterLevel').value;
+
+            const filtered = allLogs.filter(log => {
+                if (sessionFilter && log.sessionCode !== sessionFilter) return false;
+                if (userFilter && log.userType !== userFilter) return false;
+                if (categoryFilter && log.category !== categoryFilter) return false;
+                if (levelFilter && log.level !== levelFilter) return false;
+                return true;
+            });
+
+            renderLogs(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('filterSession').value = '';
+            document.getElementById('filterUser').value = '';
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('filterLevel').value = '';
+            renderLogs(allLogs);
+        }
+
+        async function clearLogs() {
+            if (!confirm('¿Estás seguro de que deseas borrar todos los logs?')) return;
+
+            try {
+                await fetch('/api/logs', { method: 'DELETE' });
+                allLogs = [];
+                renderLogs([]);
+            } catch (error) {
+                console.error('Error clearing logs:', error);
+                alert('Error al borrar logs');
+            }
+        }
+
+        // Auto-refresh
+        document.getElementById('autoRefresh').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        });
+
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            autoRefreshInterval = setInterval(fetchLogs, 3000); // Every 3 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        // Initial load
+        fetchLogs();
+        startAutoRefresh();
+    </script>
+</body>
+</html>
+    `);
+});
+
+// ✅ LOGGING SYSTEM: API endpoint para obtener logs
+app.get('/api/logs', (req, res) => {
+    const errorCount = clientLogs.filter(log => log.level === 'error').length;
+    const warningCount = clientLogs.filter(log => log.level === 'warning').length;
+
+    res.json({
+        logs: clientLogs,
+        totalLogs: clientLogs.length,
+        errorCount,
+        warningCount,
+        activeSessions: activeSessions.size,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// ✅ LOGGING SYSTEM: API endpoint para borrar logs
+app.delete('/api/logs', (req, res) => {
+    const previousCount = clientLogs.length;
+    clientLogs.length = 0;
+
+    res.json({
+        success: true,
+        message: `Eliminados ${previousCount} logs`,
+        timestamp: new Date().toISOString()
+    });
 });
 
 // ✅ Endpoint /twilio-token - Generar Access Token para Twilio Video
@@ -435,6 +954,52 @@ io.on('connection', (socket) => {
         if (sessionToRemove) {
             activeSessions.delete(sessionToRemove);
             console.log(`🗑️ Sesión eliminada: ${sessionToRemove}`);
+        }
+    });
+
+    // ✅ LOGGING SYSTEM: Recibir logs de clientes
+    socket.on('client-log', ({ logs, batchTimestamp }) => {
+        if (!logs || !Array.isArray(logs)) return;
+
+        logs.forEach(log => {
+            // Add server timestamp
+            log.serverReceivedAt = new Date().toISOString();
+            log.socketId = socket.id;
+
+            clientLogs.push(log);
+
+            // 🔔 WhatsApp: Send critical events
+            if (log.level === 'error' || log.level === 'critical') {
+                whatsappNotifier.queueNotification({
+                    level: log.level,
+                    userType: log.userType,
+                    sessionCode: log.sessionCode || 'UNKNOWN',
+                    message: log.message,
+                    details: log.data ? JSON.stringify(log.data).substring(0, 200) : null
+                });
+            }
+
+            // 🔔 WhatsApp: Alert on Twilio connection failures
+            if (log.category === 'twilio' && log.level === 'error') {
+                const errorMsg = log.data?.error?.message || log.message;
+                whatsappNotifier.sendCriticalAlert(
+                    log.sessionCode || 'UNKNOWN',
+                    log.userType,
+                    `Fallo Twilio: ${log.message}`,
+                    errorMsg
+                );
+            }
+        });
+
+        // Maintain max logs limit (FIFO)
+        while (clientLogs.length > MAX_LOGS_IN_MEMORY) {
+            clientLogs.shift();
+        }
+
+        // Log error count on server side for monitoring
+        const errorCount = logs.filter(log => log.level === 'error').length;
+        if (errorCount > 0) {
+            console.log(`⚠️ Recibidos ${errorCount} errores en batch de ${logs.length} logs`);
         }
     });
 
