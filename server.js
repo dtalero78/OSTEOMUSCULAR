@@ -756,6 +756,12 @@ io.on('connection', (socket) => {
         });
 
         console.log(`👨‍⚕️ Médico registrado - Sesión: ${sessionCode}`);
+
+        // 📞 WhatsApp: Notificar nueva sesión creada
+        whatsappNotifier.notifyNewSession(
+            doctorData.name || 'Doctor desconocido',
+            sessionCode
+        ).catch(err => console.error('Error enviando notificación WhatsApp:', err));
     });
 
     // Paciente se conecta con código de sesión
@@ -807,6 +813,13 @@ io.on('connection', (socket) => {
         }, 500);
 
         console.log(`👤 Paciente conectado a sesión: ${sessionCode}`);
+
+        // 👤 WhatsApp: Notificar paciente conectado
+        whatsappNotifier.notifyPatientConnected(
+            session.doctorData.name || 'Doctor desconocido',
+            patientData.name || 'Paciente desconocido',
+            sessionCode
+        ).catch(err => console.error('Error enviando notificación WhatsApp:', err));
     });
 
     // ✅ NUEVO: Transmitir landmarks por Socket.io (separado de métricas)
@@ -943,6 +956,14 @@ io.on('connection', (socket) => {
                 io.to(session.doctorId).emit('patient-disconnected', {
                     message: 'El paciente se ha desconectado'
                 });
+
+                // 🔌 WhatsApp: Notificar desconexión de paciente
+                whatsappNotifier.notifyPatientDisconnected(
+                    session.doctorData.name || 'Doctor desconocido',
+                    session.patientData.name || 'Paciente desconocido',
+                    code
+                ).catch(err => console.error('Error enviando notificación WhatsApp:', err));
+
                 session.patientId = null;
                 session.patientData = null;
                 session.isActive = false;

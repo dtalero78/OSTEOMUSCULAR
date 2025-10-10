@@ -183,6 +183,99 @@ class WhatsAppNotifier {
             console.error('Failed to send session summary:', error);
         }
     }
+
+    /**
+     * 📞 Notify new session created by doctor
+     */
+    async notifyNewSession(doctorName, sessionCode) {
+        const timestamp = new Date().toLocaleString('es-CO', {
+            timeZone: 'America/Bogota',
+            hour12: false
+        });
+
+        let message = `📞 *NUEVA SESIÓN*\n`;
+        message += `📅 ${timestamp}\n\n`;
+        message += `👨‍⚕️ Doctor: *${doctorName}*\n`;
+        message += `🔑 Código: *${sessionCode}*\n\n`;
+        message += `⏳ Esperando paciente...`;
+
+        try {
+            await this.sendTextMessage(ADMIN_PHONE, message);
+        } catch (error) {
+            console.error('Failed to send new session notification:', error);
+        }
+    }
+
+    /**
+     * 👤 Notify patient connected to session
+     */
+    async notifyPatientConnected(doctorName, patientName, sessionCode) {
+        const timestamp = new Date().toLocaleString('es-CO', {
+            timeZone: 'America/Bogota',
+            hour12: false
+        });
+
+        let message = `👤 *PACIENTE CONECTADO*\n`;
+        message += `📅 ${timestamp}\n\n`;
+        message += `👨‍⚕️ Doctor: ${doctorName}\n`;
+        message += `👤 Paciente: *${patientName}*\n`;
+        message += `🔑 Sesión: ${sessionCode}\n\n`;
+        message += `✅ Consulta iniciada`;
+
+        try {
+            await this.sendTextMessage(ADMIN_PHONE, message);
+        } catch (error) {
+            console.error('Failed to send patient connected notification:', error);
+        }
+    }
+
+    /**
+     * 🔌 Notify patient disconnected
+     */
+    async notifyPatientDisconnected(doctorName, patientName, sessionCode) {
+        const timestamp = new Date().toLocaleString('es-CO', {
+            timeZone: 'America/Bogota',
+            hour12: false
+        });
+
+        let message = `🔌 *PACIENTE DESCONECTADO*\n`;
+        message += `📅 ${timestamp}\n\n`;
+        message += `👨‍⚕️ Doctor: ${doctorName}\n`;
+        message += `👤 Paciente: ${patientName}\n`;
+        message += `🔑 Sesión: ${sessionCode}`;
+
+        try {
+            await this.sendTextMessage(ADMIN_PHONE, message);
+        } catch (error) {
+            console.error('Failed to send patient disconnected notification:', error);
+        }
+    }
+
+    /**
+     * ✅ Notify session completed successfully
+     */
+    async notifySessionCompleted(doctorName, patientName, sessionCode, durationMs) {
+        const timestamp = new Date().toLocaleString('es-CO', {
+            timeZone: 'America/Bogota',
+            hour12: false
+        });
+
+        const minutes = Math.floor(durationMs / 60000);
+        const seconds = Math.floor((durationMs % 60000) / 1000);
+
+        let message = `✅ *SESIÓN COMPLETADA*\n`;
+        message += `📅 ${timestamp}\n\n`;
+        message += `👨‍⚕️ Doctor: ${doctorName}\n`;
+        message += `👤 Paciente: ${patientName}\n`;
+        message += `🔑 Sesión: ${sessionCode}\n`;
+        message += `⏱️ Duración: ${minutes}m ${seconds}s`;
+
+        try {
+            await this.sendTextMessage(ADMIN_PHONE, message);
+        } catch (error) {
+            console.error('Failed to send session completed notification:', error);
+        }
+    }
 }
 
 // Export singleton instance
