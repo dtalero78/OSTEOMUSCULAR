@@ -357,7 +357,13 @@ class Logger {
      */
     tryGetSessionCodeFromDOM() {
         try {
-            // Médico: buscar en sessionCodeDisplay
+            // Médico (hidden field): Máxima prioridad para persistencia
+            const currentDoctorSessionCode = document.getElementById('currentDoctorSessionCode');
+            if (currentDoctorSessionCode && currentDoctorSessionCode.value) {
+                return currentDoctorSessionCode.value.trim().toUpperCase();
+            }
+
+            // Médico (visible display): Fallback si no hay hidden field
             const doctorCodeDisplay = document.getElementById('sessionCodeDisplay');
             if (doctorCodeDisplay && doctorCodeDisplay.textContent !== '------') {
                 return doctorCodeDisplay.textContent.trim();

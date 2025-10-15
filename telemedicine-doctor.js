@@ -297,6 +297,12 @@ class TelemedicineDoctor {
             this.logger.setSessionCode(sessionCode);
             this.isSessionActive = true;
 
+            // 🔍 CRÍTICO: Copiar sessionCode a campo oculto para detección del logger
+            const currentDoctorSessionCodeField = document.getElementById('currentDoctorSessionCode');
+            if (currentDoctorSessionCodeField) {
+                currentDoctorSessionCodeField.value = sessionCode;
+            }
+
             this.sessionCodeDisplay.textContent = sessionCode;
             this.sessionCodeContainer.classList.remove('hidden');
             this.updateConnectionStatus('🟡 Sesión creada - Esperando paciente', 'waiting');
@@ -1714,6 +1720,12 @@ class TelemedicineDoctor {
         this.isSessionActive = false;
         this.patientConnected = false;
         this.isExamRunning = false;
+
+        // 🔍 Limpiar campo oculto de sessionCode
+        const currentDoctorSessionCodeField = document.getElementById('currentDoctorSessionCode');
+        if (currentDoctorSessionCodeField) {
+            currentDoctorSessionCodeField.value = '';
+        }
 
         this.sessionCodeContainer.classList.add('hidden');
         this.hidePatientInfo();
