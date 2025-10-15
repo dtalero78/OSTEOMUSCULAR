@@ -19,7 +19,7 @@ This is a **telemedicine system** for medical pose analysis called "Examen Osteo
 - 💰 **Costo**: ~$3/mes para 100+ pacientes simultáneos
 
 **Últimas mejoras críticas**:
-- 🔍 **SessionCode en logs de red**: Campo oculto persiste sessionCode cuando paciente está en examen (2025-10-10)
+- 🔍 **SessionCode en logs de red**: Campo oculto persiste sessionCode en paciente Y médico durante sesión activa (2025-10-15)
 - 📊 **Monitoreo de recursos**: Endpoint /health para tracking de memoria, sesiones y capacidad
 - 📲 **Notificaciones WhatsApp**: Logs automáticos de sesiones, errores y eventos de red con detección de logs zombie
 - 🔗 **Auto-completar paciente**: URL con parámetros pre-llena nombre y código de sesión
@@ -489,6 +489,141 @@ tryGetSessionCodeFromDOM() {
 **Impact**: Critical for production monitoring - enables proper diagnosis of network-related connection failures by preserving sessionCode context throughout patient examination lifecycle.
 
 **Commit**: f913eef (2025-10-10)
+
+---
+
+### SessionCode Detection Fix for Network Events - Doctor Interface (2025-10-15) - CRITICAL BUG FIX
+
+**Problem**: WhatsApp logs showed `doctor (UNKNOWN)` instead of actual session code when doctor experienced network disconnections. Production case: 10 consecutive network dropouts in 7 minutes (13:42-13:49) all showing "UNKNOWN".
+
+**Root Cause**: Same issue as patients - logger tried to read sessionCode from visible `sessionCodeDisplay` element, but when doctor had browser tab in background (`pageVisible: false`), DOM access was unreliable. Additionally, sessionCodeDisplay only exists when session is active.
+
+**Solution**: Implemented same hidden field persistence system for doctor interface.
+
+#### Changes Implemented:
+
+**1. Hidden SessionCode Field** ([medico.html:536](medico.html#L536)):
+```html
+<body>
+    <!-- Hidden field for logger sessionCode detection -->
+    <input type="hidden" id="currentDoctorSessionCode" value="">
+    ...
+</body>
+```
+
+**2. Field Population on Session Creation** ([telemedicine-doctor.js:300-304](telemedicine-doctor.js#L300-L304)):
+```javascript
+// session-created event handler
+this.socket.on('session-created', ({ sessionCode, message }) => {
+    this.sessionCode = sessionCode;
+    this.logger.setSessionCode(sessionCode);
+
+    // Copy sessionCode to hidden field for logger detection
+    const currentDoctorSessionCodeField = document.getElementById('currentDoctorSessionCode');
+    if (currentDoctorSessionCodeField) {
+        currentDoctorSessionCodeField.value = sessionCode;
+    }
+
+    this.sessionCodeDisplay.textContent = sessionCode;
+    ...
+});
+```
+
+**3. Field Cleanup on Session Reset** ([telemedicine-doctor.js:1724-1728](telemedicine-doctor.js#L1724-L1728)):
+```javascript
+resetSession() {
+    this.sessionCode = null;
+
+    // Clear hidden sessionCode field
+    const currentDoctorSessionCodeField = document.getElementById('currentDoctorSessionCode');
+    if (currentDoctorSessionCodeField) {
+        currentDoctorSessionCodeField.value = '';
+    }
+    ...
+}
+```
+
+**4. Logger Priority Update** ([logger.js:360-370](public/js/logger.js#L360-L370)):
+```javascript
+tryGetSessionCodeFromDOM() {
+    // 1️⃣ Doctor hidden field - HIGHEST PRIORITY (NEW)
+    const currentDoctorSessionCode = document.getElementById('currentDoctorSessionCode');
+    if (currentDoctorSessionCode && currentDoctorSessionCode.value) {
+        return currentDoctorSessionCode.value.trim().toUpperCase();
+    }
+
+    // 2️⃣ Doctor visible display - Fallback
+    const doctorCodeDisplay = document.getElementById('sessionCodeDisplay');
+    if (doctorCodeDisplay && doctorCodeDisplay.textContent !== '------') {
+        return doctorCodeDisplay.textContent.trim();
+    }
+
+    // 3️⃣ Patient hidden field...
+    // 4️⃣ Patient login field...
+}
+```
+
+#### Results:
+
+**Before** (❌):
+```
+🚨 LOGS TELEMEDICINA
+📅 15/10/2025, 13:42:39
+
+❌ doctor (UNKNOWN)
+   Network connection lost
+   Detalles: {
+      "connectionType": "4g",
+      "downlink": 10,
+      "pageVisible": false
+   }
+```
+
+**After** (✅):
+```
+🚨 LOGS TELEMEDICINA
+📅 15/10/2025, 13:42:39
+
+❌ doctor (ABC123)
+   Network connection lost
+   Detalles: {
+      "connectionType": "4g",
+      "downlink": 10,
+      "rtt": "unknown",
+      "pageVisible": false,
+      "batteryLevel": "checking..."
+   }
+```
+
+#### Production Case Analysis (15/10/2025):
+
+**Timeline**: 10 network disconnections in 7 minutes
+- 13:42:39 → 13:49:41 (all showing "UNKNOWN")
+- Network oscillating between 4g and 3g
+- `pageVisible: false` in all events (doctor had tab in background)
+- ~45-50 seconds between disconnections (consistent pattern)
+
+**Root Causes Identified**:
+1. **SessionCode detection failure** - Fixed with hidden field (this commit)
+2. **Doctor's unstable mobile network** - Recommendation: use WiFi for consultations
+3. **Browser tab in background** - Recommendation: keep doctor interface active during sessions
+
+#### Benefits:
+- ✅ **Complete coverage**: Both doctor and patient sessionCodes now captured reliably
+- ✅ **Background tab resilience**: Works even when doctor switches tabs
+- ✅ **Session correlation**: Can match doctor errors with patient errors in same session
+- ✅ **Better diagnostics**: Identify which doctor has recurring network issues
+- ✅ **Consistent approach**: Same solution pattern for both interfaces
+
+**Files Modified**:
+- `medico.html`: Added hidden sessionCode field at body level
+- `telemedicine-doctor.js`: Populate on session creation, clear on reset
+- `public/js/logger.js`: Updated detection priority for doctor hidden field
+- `CLAUDE.md`: This documentation
+
+**Impact**: Completes sessionCode detection coverage for both patient and doctor interfaces. All network events in production will now include identifiable session codes for proper diagnosis and correlation.
+
+**Commit**: 3b9afa1 (2025-10-15)
 
 ---
 
