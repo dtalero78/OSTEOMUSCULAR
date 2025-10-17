@@ -489,6 +489,90 @@ if (closePermissionsBanner) {
 
 **Production Impact**: Addresses real-world case from session D86BYE where doctor experienced 3 permission errors in 40 seconds. Banner now provides immediate visual feedback and actionable solution.
 
+**Commit**: 7cad138 (2025-10-17)
+
+---
+
+### Twilio Error 20103 Troubleshooting (2025-10-17) - OPERATIONS
+
+**Problem**: Doctor SIXTA in session K15IKZ (patient CAMILA MUÑOZ) experienced `TwilioError 20103: Invalid Access Token issuer/subject` when trying to connect to Twilio Video.
+
+**Diagnosis**:
+- ✅ JWT token generation works correctly (credentials have valid format)
+- ❌ Twilio API rejects authentication (account issue)
+- Error code 20103 indicates problem with token issuer (account/API key mismatch or suspension)
+
+**Probable Cause**: **Account suspended due to insufficient balance or expired trial**
+
+#### Common Causes of Error 20103:
+
+1. **Trial account expired** (used up $15 initial credit)
+2. **Balance at $0** (account suspended until recharge)
+3. **Payment method declined** (expired/invalid credit card)
+4. **API Key revoked** in Twilio Console
+5. **Account SID and API Key from different accounts**
+
+#### Solution Steps:
+
+**1. Check Twilio Account Status**:
+- Go to: https://console.twilio.com/billing/overview
+- Verify balance (should be > $0)
+- Check account status (Active / Suspended / Trial)
+
+**2. Add Funds** (if balance is $0):
+- Go to: https://console.twilio.com/billing/manage-billing
+- Add at least $20 USD for monthly usage
+- Wait 2-5 minutes for activation
+
+**3. Verify API Key Status**:
+- Go to: https://console.twilio.com/develop/api-keys/project-api-keys
+- Check if API Key `SK35758657...` is Active (not Revoked)
+- If revoked, create new API Key and update `.env`
+
+**4. Upgrade Account** (if in trial):
+- Go to: https://console.twilio.com/billing/upgrade
+- Add valid credit card
+- Complete upgrade process
+
+#### Cost Estimate:
+- **50 sessions/day** × **10 min average** × **2 participants** × **$0.002/min/participant**
+- **Daily**: ~$2/day
+- **Monthly**: ~$60/month
+
+#### Tools Created:
+
+**1. Diagnostic Script** (`check-twilio-credentials.js`):
+- Validates environment variables format
+- Tests JWT token generation
+- Attempts API authentication
+- Provides detailed error messages
+
+**Usage**:
+```bash
+node check-twilio-credentials.js
+```
+
+**2. Complete Troubleshooting Guide** (`TROUBLESHOOTING_TWILIO_ERROR_20103.md`):
+- Detailed explanation of error 20103
+- Step-by-step solutions for all possible causes
+- Cost monitoring recommendations
+- Twilio Console links for quick access
+
+#### Validation After Fix:
+
+1. Restart server: `npm start`
+2. Doctor creates session
+3. Patient connects
+4. Verify NO error 20103 appears
+5. Verify video streams work bidirectionally
+
+**Files Created**:
+- `check-twilio-credentials.js`: Diagnostic script
+- `TROUBLESHOOTING_TWILIO_ERROR_20103.md`: Complete troubleshooting guide
+- `CLAUDE.md`: This documentation
+
+**Action Required**: Check Twilio Console balance and recharge if needed. This is likely a payment/billing issue, not a code issue.
+
 **Commit**: [pending] (2025-10-17)
 
 ---
