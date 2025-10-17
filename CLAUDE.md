@@ -386,6 +386,113 @@ The application follows a **modern, professional dark theme** inspired by Whereb
 
 ## Recent Improvements (Latest)
 
+### Permissions Error Banner UI Enhancement (2025-10-17) - UX IMPROVEMENT
+
+**Problem**: Doctors experiencing `NotAllowedError` (camera/microphone permissions denied) received only a small browser alert that could be easily dismissed. Users were left confused about how to fix the issue, leading to repeated connection failures.
+
+**Real Case**: Doctor JUAN in session D86BYE (patient YEISSON ORTIZ) experienced 3 consecutive permission errors in 40 seconds (8:49:55 → 8:50:26), indicating unclear error messaging.
+
+**Solution**: Implemented prominent, persistent error banner with step-by-step instructions.
+
+#### Changes Implemented:
+
+**1. Persistent Banner UI** ([medico.html:538-557](medico.html#L538-L557)):
+```html
+<div id="permissionsErrorBanner" class="permissions-error-banner" style="display: none;">
+    <div class="permissions-error-content">
+        <div class="error-icon">🔒</div>
+        <div class="error-message">
+            <h3>Permisos de Cámara/Micrófono Denegados</h3>
+            <ol>
+                <li>Haga clic en el ícono 🔒 o ⓘ en la barra de direcciones</li>
+                <li>Busque "Cámara" y "Micrófono"</li>
+                <li>Cambie ambos permisos a "Permitir"</li>
+                <li>Recargue la página con F5 o Ctrl+R</li>
+            </ol>
+            <p>Si el problema persiste, consulte las
+               <a href="INSTRUCCIONES_PERMISOS_MEDICO.md">instrucciones completas</a>.
+            </p>
+        </div>
+        <button id="closePermissionsBanner">&times;</button>
+    </div>
+</div>
+```
+
+**2. Banner Styling** ([medico.html:533-658](medico.html#L533-L658)):
+- Fixed position at top of screen (`z-index: 10000`)
+- Red gradient background (`#e85d55` → `#d94a42`)
+- Slide-down animation for visual prominence
+- Close button (allows dismissal but keeps alert for emphasis)
+- Responsive mobile layout (stacked on small screens)
+
+**3. JavaScript Integration** ([telemedicine-doctor.js:607-608](telemedicine-doctor.js#L607-L608)):
+```javascript
+// In NotAllowedError handler
+this.showPermissionsErrorBanner();
+
+// Also keep alert for users who close banner
+alert('⚠️ PERMISOS DENEGADOS\n\n...');
+```
+
+**4. Banner Methods** ([telemedicine-doctor.js:1873-1889](telemedicine-doctor.js#L1873-L1889)):
+```javascript
+showPermissionsErrorBanner() {
+    const banner = document.getElementById('permissionsErrorBanner');
+    if (banner) {
+        banner.style.display = 'block';
+        this.logger.info('Banner de permisos mostrado', {}, 'ui');
+    }
+}
+
+hidePermissionsErrorBanner() {
+    const banner = document.getElementById('permissionsErrorBanner');
+    if (banner) {
+        banner.style.display = 'none';
+        this.logger.info('Banner de permisos cerrado', {}, 'ui');
+    }
+}
+```
+
+**5. Event Listener** ([telemedicine-doctor.js:239-242](telemedicine-doctor.js#L239-L242)):
+```javascript
+const closePermissionsBanner = document.getElementById('closePermissionsBanner');
+if (closePermissionsBanner) {
+    closePermissionsBanner.addEventListener('click', () => this.hidePermissionsErrorBanner());
+}
+```
+
+**6. Comprehensive Documentation** (`INSTRUCCIONES_PERMISOS_MEDICO.md`):
+- Step-by-step solutions for all browsers (Chrome, Edge, Safari, Firefox)
+- System-level permission checks (Windows, macOS)
+- Antivirus/firewall troubleshooting
+- HTTPS requirement explanation
+- Quick camera test link (webcamtests.com)
+
+#### Benefits:
+- ✅ **Highly visible**: Red banner at top of screen, impossible to miss
+- ✅ **Actionable**: Clear numbered steps with exact instructions
+- ✅ **Persistent**: Stays visible until dismissed or issue resolved
+- ✅ **Educational**: Explains where to find browser permissions
+- ✅ **Reduces support load**: Self-service troubleshooting with detailed guide
+- ✅ **Tracked**: Logger captures when banner shown/closed for analytics
+- ✅ **Mobile-friendly**: Responsive design for all screen sizes
+
+#### Results Expected:
+- **Before**: Doctors confused, repeated errors, gave up
+- **After**: Clear visual guidance, self-resolution, fewer support tickets
+
+**Files Modified**:
+- `medico.html`: Banner HTML + CSS styling
+- `telemedicine-doctor.js`: `showPermissionsErrorBanner()`, `hidePermissionsErrorBanner()`, event listener
+- `INSTRUCCIONES_PERMISOS_MEDICO.md`: Comprehensive troubleshooting guide (new file)
+- `CLAUDE.md`: This documentation
+
+**Production Impact**: Addresses real-world case from session D86BYE where doctor experienced 3 permission errors in 40 seconds. Banner now provides immediate visual feedback and actionable solution.
+
+**Commit**: [pending] (2025-10-17)
+
+---
+
 ### SessionCode Detection Fix for Network Events (2025-10-10) - CRITICAL BUG FIX
 
 **Problem**: WhatsApp logs showed `patient (UNKNOWN)` instead of actual session code when network connection was lost during patient examination.

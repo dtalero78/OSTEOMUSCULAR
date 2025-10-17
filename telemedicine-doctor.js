@@ -235,6 +235,12 @@ class TelemedicineDoctor {
     }
 
     setupEventListeners() {
+        // Banner de permisos
+        const closePermissionsBanner = document.getElementById('closePermissionsBanner');
+        if (closePermissionsBanner) {
+            closePermissionsBanner.addEventListener('click', () => this.hidePermissionsErrorBanner());
+        }
+
         // Crear sesión
         this.createSessionBtn.addEventListener('click', () => this.createSession());
 
@@ -603,6 +609,11 @@ class TelemedicineDoctor {
                 }, 'camera');
 
                 this.updateConnectionStatus('❌ Permisos de cámara denegados', 'error');
+
+                // Mostrar banner de error persistente
+                this.showPermissionsErrorBanner();
+
+                // También mostrar alert para usuarios que cierren el banner
                 alert('⚠️ PERMISOS DENEGADOS\n\n' +
                       'Debe permitir acceso a la cámara y micrófono.\n\n' +
                       'Pasos:\n' +
@@ -1857,6 +1868,24 @@ class TelemedicineDoctor {
         const videoContainer = this.remoteVideo.parentElement;
         videoContainer.style.position = 'relative';
         videoContainer.appendChild(playButton);
+    }
+
+    // 🚨 Mostrar banner de error de permisos
+    showPermissionsErrorBanner() {
+        const banner = document.getElementById('permissionsErrorBanner');
+        if (banner) {
+            banner.style.display = 'block';
+            this.logger.info('Banner de permisos mostrado', {}, 'ui');
+        }
+    }
+
+    // 🚨 Ocultar banner de error de permisos
+    hidePermissionsErrorBanner() {
+        const banner = document.getElementById('permissionsErrorBanner');
+        if (banner) {
+            banner.style.display = 'none';
+            this.logger.info('Banner de permisos cerrado', {}, 'ui');
+        }
     }
 }
 

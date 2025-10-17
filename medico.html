@@ -529,11 +529,159 @@
                 padding: 15px;
             }
         }
+
+        /* 🚨 BANNER DE ERROR DE PERMISOS */
+        .permissions-error-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #e85d55 0%, #d94a42 100%);
+            color: white;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .permissions-error-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .error-icon {
+            font-size: 48px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .error-message {
+            flex: 1;
+        }
+
+        .error-message h3 {
+            margin: 0 0 12px 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+        }
+
+        .error-message p {
+            margin: 0 0 16px 0;
+            font-size: 15px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.95);
+        }
+
+        .error-message ol {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        .error-message ol li {
+            margin-bottom: 8px;
+        }
+
+        .error-message ol li strong {
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .close-banner-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 28px;
+            line-height: 1;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .close-banner-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .permissions-error-content {
+                flex-direction: column;
+                padding: 20px;
+                gap: 16px;
+            }
+
+            .error-icon {
+                font-size: 36px;
+            }
+
+            .error-message h3 {
+                font-size: 18px;
+            }
+
+            .error-message p,
+            .error-message ol {
+                font-size: 13px;
+            }
+
+            .close-banner-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- 🔍 Hidden field for logger sessionCode detection -->
     <input type="hidden" id="currentDoctorSessionCode" value="">
+
+    <!-- 🚨 BANNER DE ERROR DE PERMISOS -->
+    <div id="permissionsErrorBanner" class="permissions-error-banner" style="display: none;">
+        <div class="permissions-error-content">
+            <div class="error-icon">🔒</div>
+            <div class="error-message">
+                <h3>Permisos de Cámara/Micrófono Denegados</h3>
+                <p>Debe permitir el acceso a su cámara y micrófono para realizar consultas.</p>
+                <ol>
+                    <li>Haga clic en el ícono <strong>🔒</strong> o <strong>ⓘ</strong> en la barra de direcciones (arriba)</li>
+                    <li>Busque <strong>"Cámara"</strong> y <strong>"Micrófono"</strong></li>
+                    <li>Cambie ambos permisos a <strong>"Permitir"</strong></li>
+                    <li>Recargue la página con <strong>F5</strong> o <strong>Ctrl+R</strong></li>
+                </ol>
+                <p style="margin-top: 12px; font-size: 13px; opacity: 0.8;">
+                    Si el problema persiste, consulte las <a href="INSTRUCCIONES_PERMISOS_MEDICO.md" target="_blank" style="color: #5b8def; text-decoration: underline;">instrucciones completas</a>.
+                </p>
+            </div>
+            <button id="closePermissionsBanner" class="close-banner-btn">&times;</button>
+        </div>
+    </div>
 
     <div class="doctor-interface">
         <!-- Panel de Sesión y Control -->
